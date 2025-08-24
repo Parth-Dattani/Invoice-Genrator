@@ -49,24 +49,22 @@
 import 'dart:io';
 import 'package:path_provider/path_provider.dart';
 import 'package:share_plus/share_plus.dart';
+import 'package:pdf/pdf.dart';
+import 'package:pdf/widgets.dart' as pw;
+import 'package:pdf/widgets.dart' show Font;
 
 import '../model/model.dart';
 
-
-import 'package:flutter/material.dart';
-import 'package:get/get.dart';
-import 'package:path_provider/path_provider.dart';
-import 'package:share_plus/share_plus.dart';
-import 'dart:io';
-import 'package:pdf/pdf.dart';
-import 'package:pdf/widgets.dart' as pw;
-
 class InvoiceHelper {
-  static Future<void> generateAndShareInvoice(List<Invoice> invoices, String userName, String phoneNumber) async {
-    // Step 1: Create PDF document
+  static Future<void> generateAndShareInvoice(
+    List<Invoice> invoices,
+    String userName,
+    String phoneNumber,
+  ) async {
     final pdf = pw.Document();
 
-    // Add invoice content
+    // Use a font that supports ₹ and Unicode (NotoSans)
+
     pdf.addPage(
       pw.Page(
         pageFormat: PdfPageFormat.a4,
@@ -81,6 +79,7 @@ class InvoiceHelper {
                   style: pw.TextStyle(
                     fontSize: 24,
                     fontWeight: pw.FontWeight.bold,
+                    //font: boldFont,
                   ),
                 ),
               ),
@@ -93,15 +92,15 @@ class InvoiceHelper {
                   pw.Column(
                     crossAxisAlignment: pw.CrossAxisAlignment.start,
                     children: [
-                      pw.Text('Customer: $userName'),
-                      pw.Text('Phone: $phoneNumber'),
+                      pw.Text('Customer: $userName', style: pw.TextStyle()),
+                      pw.Text('Phone: $phoneNumber', style: pw.TextStyle()),
                     ],
                   ),
                   pw.Column(
                     crossAxisAlignment: pw.CrossAxisAlignment.end,
                     children: [
-                      pw.Text('Date: ${DateTime.now().toString().split(' ')[0]}'),
-                      pw.Text('Invoice #: ${DateTime.now().millisecondsSinceEpoch}'),
+                      pw.Text('Date: ${DateTime.now().toString().split(' ')[0]}', style: pw.TextStyle()),
+                      pw.Text('Invoice #: ${invoices.isNotEmpty ? invoices.first.invoiceId ?? "" : ""}', style: pw.TextStyle()),
                     ],
                   ),
                 ],
@@ -116,15 +115,15 @@ class InvoiceHelper {
                   pw.Expanded(
                     flex: 3,
                     child: pw.Text(
-                      'Product',
-                      style: pw.TextStyle(fontWeight: pw.FontWeight.bold),
+                      'Item',
+                      style: pw.TextStyle(fontWeight: pw.FontWeight.bold, ),
                     ),
                   ),
                   pw.Expanded(
                     flex: 1,
                     child: pw.Text(
                       'Qty',
-                      style: pw.TextStyle(fontWeight: pw.FontWeight.bold),
+                      style: pw.TextStyle(fontWeight: pw.FontWeight.bold, ),
                       textAlign: pw.TextAlign.center,
                     ),
                   ),
@@ -132,7 +131,7 @@ class InvoiceHelper {
                     flex: 2,
                     child: pw.Text(
                       'Price',
-                      style: pw.TextStyle(fontWeight: pw.FontWeight.bold),
+                      style: pw.TextStyle(fontWeight: pw.FontWeight.bold, ),
                       textAlign: pw.TextAlign.right,
                     ),
                   ),
@@ -140,7 +139,7 @@ class InvoiceHelper {
                     flex: 2,
                     child: pw.Text(
                       'Total',
-                      style: pw.TextStyle(fontWeight: pw.FontWeight.bold),
+                      style: pw.TextStyle(fontWeight: pw.FontWeight.bold, ),
                       textAlign: pw.TextAlign.right,
                     ),
                   ),
@@ -157,13 +156,14 @@ class InvoiceHelper {
                     children: [
                       pw.Expanded(
                         flex: 3,
-                        child: pw.Text(item.productName),
+                        child: pw.Text(item.itemName, style: pw.TextStyle()),
                       ),
                       pw.Expanded(
                         flex: 1,
                         child: pw.Text(
                           '${item.qty}',
                           textAlign: pw.TextAlign.center,
+                          style: pw.TextStyle(),
                         ),
                       ),
                       pw.Expanded(
@@ -171,6 +171,7 @@ class InvoiceHelper {
                         child: pw.Text(
                           '₹${item.price.toStringAsFixed(2)}',
                           textAlign: pw.TextAlign.right,
+                          style: pw.TextStyle(),
                         ),
                       ),
                       pw.Expanded(
@@ -178,16 +179,17 @@ class InvoiceHelper {
                         child: pw.Text(
                           '₹${(item.price * item.qty).toStringAsFixed(2)}',
                           textAlign: pw.TextAlign.right,
+                          style: pw.TextStyle(),
                         ),
                       ),
                     ],
                   ),
                 );
-              }).toList(),
+              }),
 
               pw.Divider(),
 
-              // Total
+              // Grand Total
               pw.Row(
                 mainAxisAlignment: pw.MainAxisAlignment.end,
                 children: [
@@ -196,6 +198,7 @@ class InvoiceHelper {
                     style: pw.TextStyle(
                       fontSize: 16,
                       fontWeight: pw.FontWeight.bold,
+
                     ),
                   ),
                 ],
@@ -209,6 +212,7 @@ class InvoiceHelper {
                   'Thank you for your business!',
                   style: pw.TextStyle(
                     fontStyle: pw.FontStyle.italic,
+
                   ),
                 ),
               ),
@@ -218,13 +222,13 @@ class InvoiceHelper {
       ),
     );
 
-    // Step 2: Save PDF file locally
+    // Save PDF file locally
     final directory = await getApplicationDocumentsDirectory();
     final filePath = '${directory.path}/invoice_${DateTime.now().millisecondsSinceEpoch}.pdf';
     final file = File(filePath);
     await file.writeAsBytes(await pdf.save());
 
-    // Step 3: Share PDF file
+    // Share PDF file
     await Share.shareXFiles([XFile(file.path)], text: "Here is your Invoice");
   }
 }

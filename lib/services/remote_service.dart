@@ -22,7 +22,7 @@ class RemoteService{
       'Content-Type': 'application/json',
     };
 
-    final uri = Uri.parse('${Apis.commetApi}');
+    final uri = Uri.parse(Apis.commetApi);
 
     http.Response response = await http.get(
         headers: header,

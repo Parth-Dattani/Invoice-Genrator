@@ -1,13 +1,9 @@
-import 'package:demo_prac_getx/controller/bash_controller.dart';
 import 'package:demo_prac_getx/model/model.dart';
 import 'package:demo_prac_getx/services/remote_service.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'package:share_plus/share_plus.dart';
-import 'package:url_launcher/url_launcher.dart';
 
 import '../constant/app_colors.dart';
-import '../utils/pdf_helper.dart';
 import '../widgets/widgets.dart';
 
 
@@ -28,7 +24,6 @@ class ItemController extends GetxController {
     });
   }
 
-  // Fetch items from Items table
   Future<void> fetchItems() async {
     try {
       isLoading.value = true;
@@ -54,34 +49,33 @@ class ItemController extends GetxController {
 
 
   // Add item to cart (convert Item to Invoice)
-  void addToCart(Item item) {
+ void addToCart(Item item) {
     // Check if item already in cart
-    final existingIndex = cart.indexWhere((cartItem) => cartItem.pid == item.itemId);
+    final existingIndex = cart.indexWhere((cartItem) => cartItem.itemId == item.itemId);
 
     if (existingIndex >= 0) {
       // Update quantity if already in cart
       final existingItem = cart[existingIndex];
       cart[existingIndex] = Invoice(
-        pid: existingItem.pid,
-        productName: existingItem.productName,
+        invoiceId: existingItem.invoiceId,
+        itemId: existingItem.itemId,
+        itemName: existingItem.itemName,
         qty: existingItem.qty + 1,
         price: existingItem.price,
         mobile: existingItem.mobile,
-        userName: existingItem.userName,
-        date: existingItem.date,
+        customerName: existingItem.customerName,
       );
     } else {
-      // Add new item to cart with default values
       cart.add(Invoice(
-        pid: item.itemId,
-        productName: item.itemName,
+        invoiceId: "INV-${DateTime.now().millisecondsSinceEpoch}",
+        itemId: item.itemId,
+        itemName: item.itemName,
         qty: 1,
         price: item.price,
         mobile: "",
-        userName: "",
-        date: DateTime.now(),
+        customerName: "",
+
       ));
-      print("-----Error on AddTo Cart() in Controller,,,, e.toString()}");
       showCustomSnackbar(
         title: "Added to Cart",
         message: "${item.itemName} added to cart",
@@ -92,12 +86,12 @@ class ItemController extends GetxController {
   }
 
   void removeFromCart(String pid) {
-    final item = cart.firstWhereOrNull((cartItem) => cartItem.pid == pid);
-    cart.removeWhere((item) => item.pid == pid);
+    final item = cart.firstWhereOrNull((cartItem) => cartItem.itemId == pid);
+    cart.removeWhere((item) => item.itemId == pid);
     if (item != null) {
       showCustomSnackbar(
         title: "Removed",
-        message: "${item.productName} removed from cart",
+        message: "${item.itemId} removed from cart",
         baseColor: Colors.red.shade700,
         icon: Icons.delete_outline,
       );
@@ -147,66 +141,27 @@ class ItemController extends GetxController {
       );
       return false;
     }
-
-    isSavingInvoice.value = true;
-
-    try {
-      await RemoteService.addInvoice(invoices);
-
-      showCustomSnackbar(
-        title: "Success",
-        message: "Invoice saved successfully!",
-        baseColor: AppColors.darkGreenColor,
-        icon: Icons.check_circle_outline,
-      );
-
-      clearCart();
-      return true;
-    } catch (e) {
-      // More specific error messages
-      String errorMessage = "Failed to save invoice";
-
-      if (e.toString().contains("400")) {
-        errorMessage = "Table schema mismatch. Please check your AppSheet table columns.";
-      } else if (e.toString().contains("401")) {
-        errorMessage = "Access denied. Please check your API key.";
-      } else if (e.toString().contains("404")) {
-        errorMessage = "Invoice table not found. Please check your table name.";
-      } else if (e.toString().contains("Network error")) {
-        errorMessage = "Network connection failed. Please check your internet.";
-      }
-
-      showCustomSnackbar(
-        title: "Error",
-        message: errorMessage,
-        baseColor: Colors.red.shade700,
-        icon: Icons.error_outline,
-      );
-
-      print("Save invoice error: $e");
-      return false;
-    } finally {
-      isSavingInvoice.value = false;
-    }
-  }
-
-  Future<bool> saveInvoiceold(List<Invoice> invoices, String userName, String phone) async {
-    isLoading.value = true;
     isSavingInvoice.value = true;
     try {
-      // Add userName and phone to all invoice items
+      // Generate one invoiceId for the whole cart
+      final String invoiceId = "INV-${DateTime.now().millisecondsSinceEpoch}";
+
+      // Assign the same invoiceId to all items
       final invoicesWithUser = invoices.map((e) => Invoice(
-        pid: e.pid,
-        productName: e.productName,
+        invoiceId: invoiceId,
+        itemId: e.itemId,
+        itemName: e.itemName,
+        //productName: e.productName,
         qty: e.qty,
         price: e.price,
         mobile: phone,
-        userName: userName,
-        date: DateTime.now(),
+        customerName: userName,
+      
       )).toList();
 
+      print("Sending invoice data: ${invoicesWithUser.map((e) => e.toMap()).toList()}");
       await RemoteService.addInvoice(invoicesWithUser);
-      print("-----Error on saveInvoice() in Controller,,,, {e.toString()}");
+
       showCustomSnackbar(
         title: "Success",
         message: "Invoice saved successfully!",
@@ -216,13 +171,13 @@ class ItemController extends GetxController {
       clearCart();
       return true;
     } catch (e) {
-      print("-----Error on saveInvoice() in Controller catch,,,, ${e.toString()}");
       showCustomSnackbar(
         title: "Error",
         message: "Failed to save invoice: $e",
         baseColor: Colors.red.shade700,
         icon: Icons.error_outline,
       );
+      print("Save invoice error: $e");
       return false;
     }finally {
       isSavingInvoice.value = false;

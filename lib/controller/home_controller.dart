@@ -13,11 +13,6 @@ class HomeController extends BaseController{
   var hasMore = true.obs;      // Flag to check if more data exists
 
 
-  @override
-  void onInit() {
-    super.onInit();
-    ///getComment();
-  }
 
   // void getComment() async {
   //   if(!hasMore.value) return;

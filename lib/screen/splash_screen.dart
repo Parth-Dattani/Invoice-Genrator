@@ -8,6 +8,8 @@ import '../constant/constant.dart';
 class SplashScreen extends GetView<SplashController>{
   static const pageId = "/SplashScreen";
 
+  const SplashScreen({super.key});
+
 
   @override
   Widget build(BuildContext context) {

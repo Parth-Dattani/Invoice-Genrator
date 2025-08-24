@@ -17,56 +17,60 @@ class Item {
     };
   }
 
-  factory Item.fromJson(Map<String, dynamic> json) {
+  factory Item.fromMap(Map<String, dynamic> map) {
     return Item(
-      itemId: json['itemId']?.toString() ?? '',
-      itemName: json['itemName']?.toString() ?? '',
-      price: double.tryParse(json['price']?.toString() ?? '0') ?? 0.0,
+      itemId: map['itemId']?.toString() ?? '',
+      itemName: map['itemName']?.toString() ?? '',
+      price: double.tryParse(map['price']?.toString() ?? '0') ?? 0.0,
     );
   }
-
 }
 
 class Invoice {
-  final String pid;
-  final String productName;
+  final String? invoiceId;
+  final String itemId;
   final int qty;
   final double price;
   final String mobile;
-  final String userName;
-  final DateTime date;
+  final String customerName;
+  final String itemName;
+  //final DateTime date;
 
   Invoice({
-    required this.pid,
-    required this.productName,
+     this.invoiceId,
+    required this.itemId,
     required this.qty,
     required this.price,
     required this.mobile,
-    required this.userName,
-    required this.date,
+    required this.customerName,
+    required this.itemName, 
+    //required this.date,
   });
 
   Map<String, dynamic> toMap() {
     return {
-      'pid': pid,
-      'productName': productName,
+      'invoiceId': invoiceId,
+      'itemId': itemId,
       'qty': qty,
       'price': price,
       'mobile': mobile,
-      'userName': userName,
-      'date': date.toIso8601String(),
+      'customerName': customerName,
+      'itemName': itemName, 
+      //'date': date.toIso8601String(),
+      'total': qty * price,
     };
   }
 
   factory Invoice.fromMap(Map<String, dynamic> map) {
     return Invoice(
-      pid: map['pid']?.toString() ?? '',
-      productName: map['productName']?.toString() ?? '',
-      qty: int.tryParse(map['qty']?.toString() ?? '1') ?? 1,
+      invoiceId: map['invoiceId']?.toString() ?? '',
+      itemId: map['itemId']?.toString() ?? '',
+      qty: int.tryParse(map['qty']?.toString() ?? '0') ?? 0,
       price: double.tryParse(map['price']?.toString() ?? '0') ?? 0.0,
       mobile: map['mobile']?.toString() ?? '',
-      userName: map['userName']?.toString() ?? '',
-      date: DateTime.tryParse(map['date']?.toString() ?? '') ?? DateTime.now(),
+      customerName: map['customerName']?.toString() ?? '',
+      itemName: map['itemName']?.toString() ?? '',
+      //date: DateTime.tryParse(map['date']?.toString() ?? '') ?? DateTime.now(),
     );
   }
 }
