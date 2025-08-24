@@ -27,8 +27,11 @@ class ItemController extends GetxController {
   Future<void> fetchItems() async {
     try {
       isLoading.value = true;
-      // final items = await RemoteService.getItems();
-      // itemList.assignAll(items);
+      final items = await RemoteService.getItems();
+      print("Fetched items: ${items.length}");
+      print(items.map((e) => e.toMap()).toList());
+      itemList.assignAll(items);
+      print("itemLListLengt------:${items.length}");
     } catch (e) {
       print("-----Error on fetchItems() in Controller,,,, ${e.toString()}");
       showCustomSnackbar(
@@ -184,6 +187,60 @@ class ItemController extends GetxController {
     }
     isLoading.value = false;
   }
+
+  ///for Single row
+//   Future<bool> saveInvoice(List<Invoice> invoices, String userName, String phone) async {
+//   if (invoices.isEmpty) {
+//     showCustomSnackbar(
+//       title: "Error",
+//       message: "Cart is empty",
+//       baseColor: Colors.red.shade700,
+//       icon: Icons.error_outline,
+//     );
+//     return false;
+//   }
+//   isSavingInvoice.value = true;
+//   try {
+//     // Generate one invoiceId for the whole invoice
+//     final String invoiceId = "INV-${DateTime.now().millisecondsSinceEpoch}";
+//
+//     // Combine all items into a single string
+//     final itemsString = invoices.map((e) => "${e.itemName} x${e.qty} @ ₹${e.price}").join(", ");
+//
+//     // Create a single invoice row
+//     final invoiceRow = {
+//       "invoiceId": invoiceId,
+//       "items": itemsString,
+//       "customerName": userName,
+//       "mobile": phone,
+//       "total": invoices.fold(0.0, (sum, e) => sum + (e.qty * e.price)).toStringAsFixed(2),
+//
+//     };
+//
+//     print("Sending single invoice row: $invoiceRow");
+//     await RemoteService.addSingleInvoice(invoiceRow);
+//
+//     showCustomSnackbar(
+//       title: "Success",
+//       message: "Invoice saved successfully!",
+//       baseColor: AppColors.darkGreenColor,
+//       icon: Icons.check_circle_outline,
+//     );
+//     clearCart();
+//     return true;
+//   } catch (e) {
+//     showCustomSnackbar(
+//       title: "Error",
+//       message: "Failed to save invoice: $e",
+//       baseColor: Colors.red.shade700,
+//       icon: Icons.error_outline,
+//     );
+//     print("Save invoice error: $e");
+//     return false;
+//   } finally {
+//     isSavingInvoice.value = false;
+//   }
+// }
 }
 
 // class ItemController extends GetxController {

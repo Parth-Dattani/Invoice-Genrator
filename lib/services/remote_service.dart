@@ -161,61 +161,69 @@ class RemoteService{
   }
 
   // Get all items from Items table
-  // static Future<List<Item>> getItems() async {
-  //   final url = Uri.parse(
-  //       "https://api.appsheet.com/api/v2/apps/$appId/tables/$itemsTableName/Action");
-  //
-  //   final body = jsonEncode({
-  //     "Action": "Find",
-  //     "Properties": {
-  //       "Locale": "en-US",
-  //       "Selector": 'Sort([{ColumnName: "itemName", Ascending: true}])',
-  //     }
-  //   });
-  //
-  //   final response = await http.post(
-  //     url,
-  //     headers: {
-  //       "Content-Type": "application/json",
-  //       "ApplicationAccessKey": accessKey,
-  //     },
-  //     body: body,
-  //   );
-  //
-  //   if (response.statusCode == 200) {
-  //     final data = jsonDecode(response.body);
-  //     if (data is Map && data.containsKey("Rows")) {
-  //       final rows = data["Rows"] as List;
-  //       return rows.map((e) => Item.fromMap(e)).toList();
-  //     } else {
-  //       throw Exception("Invalid response format: ${response.body}");
-  //     }
-  //   } else {
-  //     throw Exception("❌ Failed to load items: ${response.body}");
-  //   }
-  // }
+  static Future<List<Item>> getItems() async {
+    final url = Uri.parse(
+        "https://api.appsheet.com/api/v2/apps/$appId/tables/$itemsTableName/Action");
+  
+    final body = jsonEncode({
+      "Action": "Find",
+      "Properties": {},
+      "Rows": []
+    });
+  
+    final response = await http.post(
+      url,
+      headers: {
+        "Content-Type": "application/json",
+        "ApplicationAccessKey": accessKey,
+      },
+      body: body,
+    );
+  
+    if (response.statusCode == 200) {
+      final data = jsonDecode(response.body);
+      // final List items = data['Rows'] ?? [];
+      print("------------data:${data}");
 
-///
-// static Future<List<Item>> fetchItems() async {
-  //   final url =
-  //   Uri.parse("https://api.appsheet.com/api/v2/apps/$appId/tables/$tableNameItem/Action");
-  //
-  //   final body = jsonEncode({"Action": "Find", "Rows": []});
-  //
-  //   final response = await http.post(
-  //     url,
-  //     headers: {
-  //       "Content-Type": "application/json",
-  //       "ApplicationAccessKey": accessKey,
-  //     },
-  //     body: body,
-  //   );
-  //
-  //   if (response.statusCode == 200) {
-  //     final data = jsonDecode(response.body)["Rows"] as List;
-  //     return data.map((e) => Item.fromJson(e)).toList();
-  //   } else {
-  //     throw Exception("❌ Failed to load invoices: ${response.body}");
-  //   }
-  // }
+
+      // return items.map((e) => Item.fromMap(e)).toList();
+  
+      if (data is List) {
+        return data.map((e) => Item.fromMap(e)).toList();
+      }
+       else if (data is Map && data["Rows"] is List) {
+        final rows = data["Rows"] as List;
+        return rows.map((e) => Item.fromMap(e)).toList();
+      }
+      else {
+        throw Exception("Invalid response format: ${response.body}");
+      }
+    } else {
+      throw Exception("❌ Failed to load items: ${response.body}");
+    }
+  }
+
+  static Future<void> addSingleInvoice(Map<String, dynamic> invoiceRow) async {
+  final url = Uri.parse(
+      "https://api.appsheet.com/api/v2/apps/$appId/tables/Invoice/Action");
+  final body = jsonEncode({
+    "Action": "Add",
+    "Rows": [invoiceRow],
+  });
+
+  final response = await http.post(
+    url,
+    headers: {
+      "ApplicationAccessKey": accessKey,
+      "Content-Type": "application/json",
+    },
+    body: body,
+  );
+
+  print("AppSheet Response: ${response.statusCode} - ${response.body}");
+
+  if (response.statusCode != 200) {
+    throw Exception("❌ Failed to send invoice: ${response.body}");
+  }
+}
 }

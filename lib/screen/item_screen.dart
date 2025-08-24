@@ -527,7 +527,7 @@ if (saved) {
   await InvoiceHelper.generateAndShareInvoice(cartCopy, userName, phone);
   // Now you can clear the cart if you want
   controller.clearCart();
-  Navigator.pop(context);
+
 }
                                   Navigator.pop(context);
                                   showCustomSnackbar(
