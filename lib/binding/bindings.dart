@@ -1,2 +1,8 @@
 export 'splash_binding.dart';
 export 'home_binding.dart';
+export 'item_binding.dart';
+export 'auth_binding.dart';
+export 'company_binding.dart';
+export 'dashboard_binding.dart';
+export 'customer_registration_binding.dart';
+export 'settings_binding.dart';

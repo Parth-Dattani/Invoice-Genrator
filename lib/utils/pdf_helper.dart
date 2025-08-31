@@ -47,7 +47,9 @@
 // }
 
 import 'dart:io';
+import 'package:flutter/services.dart';
 import 'package:path_provider/path_provider.dart';
+import 'package:printing/printing.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
@@ -55,19 +57,36 @@ import 'package:pdf/widgets.dart' show Font;
 
 import '../model/model.dart';
 
+import 'package:printing/printing.dart';
+
+
+
 class InvoiceHelper {
   static Future<void> generateAndShareInvoice(
-    List<Invoice> invoices,
-    String userName,
-    String phoneNumber,
-  ) async {
+      List<Invoice> invoices,
+      String userName,
+      String phoneNumber,
+      ) async {
     final pdf = pw.Document();
 
-    // Use a font that supports ₹ and Unicode (NotoSans)
+    // Load a font that supports ₹ symbol (make sure font is in assets/fonts)
+    final ttf = pw.Font.ttf(await rootBundle.load("assets/fonts/NotoSans-Regular.ttf"));
+
+    final theme = pw.ThemeData.withFont(
+      base: ttf,
+      bold: ttf,
+      italic: ttf,
+      boldItalic: ttf,
+    );
+
+    final String invoiceId = invoices.isNotEmpty
+        ? (invoices.first.invoiceId ?? "UNKNOWN")
+        : "UNKNOWN";
 
     pdf.addPage(
       pw.Page(
         pageFormat: PdfPageFormat.a4,
+        theme: theme, // ✅ Set theme so ₹ works everywhere
         build: (pw.Context context) {
           return pw.Column(
             crossAxisAlignment: pw.CrossAxisAlignment.start,
@@ -79,28 +98,27 @@ class InvoiceHelper {
                   style: pw.TextStyle(
                     fontSize: 24,
                     fontWeight: pw.FontWeight.bold,
-                    //font: boldFont,
                   ),
                 ),
               ),
               pw.SizedBox(height: 20),
 
-              // Customer information
+              // Customer info
               pw.Row(
                 mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
                 children: [
                   pw.Column(
                     crossAxisAlignment: pw.CrossAxisAlignment.start,
                     children: [
-                      pw.Text('Customer: $userName', style: pw.TextStyle()),
-                      pw.Text('Phone: $phoneNumber', style: pw.TextStyle()),
+                      pw.Text('Customer: $userName'),
+                      pw.Text('Phone: $phoneNumber'),
                     ],
                   ),
                   pw.Column(
                     crossAxisAlignment: pw.CrossAxisAlignment.end,
                     children: [
-                      pw.Text('Date: ${DateTime.now().toString().split(' ')[0]}', style: pw.TextStyle()),
-                      pw.Text('Invoice #: ${invoices.isNotEmpty ? invoices.first.invoiceId ?? "" : ""}', style: pw.TextStyle()),
+                      pw.Text('Date: ${DateTime.now().toString().split(' ')[0]}'),
+                      pw.Text('Invoice #: $invoiceId'),
                     ],
                   ),
                 ],
@@ -112,76 +130,25 @@ class InvoiceHelper {
               pw.Row(
                 mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
                 children: [
-                  pw.Expanded(
-                    flex: 3,
-                    child: pw.Text(
-                      'Item',
-                      style: pw.TextStyle(fontWeight: pw.FontWeight.bold, ),
-                    ),
-                  ),
-                  pw.Expanded(
-                    flex: 1,
-                    child: pw.Text(
-                      'Qty',
-                      style: pw.TextStyle(fontWeight: pw.FontWeight.bold, ),
-                      textAlign: pw.TextAlign.center,
-                    ),
-                  ),
-                  pw.Expanded(
-                    flex: 2,
-                    child: pw.Text(
-                      'Price',
-                      style: pw.TextStyle(fontWeight: pw.FontWeight.bold, ),
-                      textAlign: pw.TextAlign.right,
-                    ),
-                  ),
-                  pw.Expanded(
-                    flex: 2,
-                    child: pw.Text(
-                      'Total',
-                      style: pw.TextStyle(fontWeight: pw.FontWeight.bold, ),
-                      textAlign: pw.TextAlign.right,
-                    ),
-                  ),
+                  pw.Expanded(flex: 3, child: pw.Text('Item', style: pw.TextStyle(fontWeight: pw.FontWeight.bold))),
+                  pw.Expanded(flex: 1, child: pw.Text('Qty', textAlign: pw.TextAlign.center, style: pw.TextStyle(fontWeight: pw.FontWeight.bold))),
+                  pw.Expanded(flex: 2, child: pw.Text('Price', textAlign: pw.TextAlign.right, style: pw.TextStyle(fontWeight: pw.FontWeight.bold))),
+                  pw.Expanded(flex: 2, child: pw.Text('Total', textAlign: pw.TextAlign.right, style: pw.TextStyle(fontWeight: pw.FontWeight.bold))),
                 ],
               ),
               pw.Divider(),
 
-              // Invoice items
+              // Items
               ...invoices.map((item) {
                 return pw.Padding(
                   padding: const pw.EdgeInsets.symmetric(vertical: 4),
                   child: pw.Row(
                     mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
                     children: [
-                      pw.Expanded(
-                        flex: 3,
-                        child: pw.Text(item.itemName, style: pw.TextStyle()),
-                      ),
-                      pw.Expanded(
-                        flex: 1,
-                        child: pw.Text(
-                          '${item.qty}',
-                          textAlign: pw.TextAlign.center,
-                          style: pw.TextStyle(),
-                        ),
-                      ),
-                      pw.Expanded(
-                        flex: 2,
-                        child: pw.Text(
-                          '₹${item.price.toStringAsFixed(2)}',
-                          textAlign: pw.TextAlign.right,
-                          style: pw.TextStyle(),
-                        ),
-                      ),
-                      pw.Expanded(
-                        flex: 2,
-                        child: pw.Text(
-                          '₹${(item.price * item.qty).toStringAsFixed(2)}',
-                          textAlign: pw.TextAlign.right,
-                          style: pw.TextStyle(),
-                        ),
-                      ),
+                      pw.Expanded(flex: 3, child: pw.Text(item.itemName)),
+                      pw.Expanded(flex: 1, child: pw.Text('${item.qty}', textAlign: pw.TextAlign.center)),
+                      pw.Expanded(flex: 2, child: pw.Text('₹${item.price.toStringAsFixed(2)}', textAlign: pw.TextAlign.right)),
+                      pw.Expanded(flex: 2, child: pw.Text('₹${(item.price * item.qty).toStringAsFixed(2)}', textAlign: pw.TextAlign.right)),
                     ],
                   ),
                 );
@@ -189,32 +156,21 @@ class InvoiceHelper {
 
               pw.Divider(),
 
-              // Grand Total
+              // Grand total
               pw.Row(
                 mainAxisAlignment: pw.MainAxisAlignment.end,
                 children: [
                   pw.Text(
                     'Grand Total: ₹${invoices.fold<double>(0, (sum, item) => sum + (item.price * item.qty)).toStringAsFixed(2)}',
-                    style: pw.TextStyle(
-                      fontSize: 16,
-                      fontWeight: pw.FontWeight.bold,
-
-                    ),
+                    style: pw.TextStyle(fontSize: 16, fontWeight: pw.FontWeight.bold),
                   ),
                 ],
               ),
 
               pw.SizedBox(height: 30),
 
-              // Footer
               pw.Center(
-                child: pw.Text(
-                  'Thank you for your business!',
-                  style: pw.TextStyle(
-                    fontStyle: pw.FontStyle.italic,
-
-                  ),
-                ),
+                child: pw.Text('Thank you for your business!', style: pw.TextStyle(fontStyle: pw.FontStyle.italic)),
               ),
             ],
           );
@@ -222,13 +178,59 @@ class InvoiceHelper {
       ),
     );
 
-    // Save PDF file locally
+    // ✅ Show preview before sharing
+    // await Printing.layoutPdf(
+    //   onLayout: (PdfPageFormat format) async => pdf.save(),
+    // );
+    // /// Save to local file
     final directory = await getApplicationDocumentsDirectory();
-    final filePath = '${directory.path}/invoice_${DateTime.now().millisecondsSinceEpoch}.pdf';
+    final filePath = '${directory.path}/$invoiceId.pdf';
     final file = File(filePath);
     await file.writeAsBytes(await pdf.save());
 
-    // Share PDF file
-    await Share.shareXFiles([XFile(file.path)], text: "Here is your Invoice");
+    print("✅ PDF saved with filename: $invoiceId.pdf");
+
+    /// Share
+    await Share.shareXFiles([XFile(file.path)], text: "Here is your Invoice: $invoiceId");
+  }
+
+  static Future<void> generateAndPreviewInvoice(
+      List<Invoice> invoices,
+      String userName,
+      String phoneNumber,
+      ) async {
+    final pdf = pw.Document();
+
+    final ttf = pw.Font.ttf(await rootBundle.load("assets/fonts/NotoSans-Regular.ttf"));
+
+    pdf.addPage(
+      pw.Page(
+        build: (context) {
+          return pw.Column(
+            children: [
+              pw.Text("Invoice Preview", style: pw.TextStyle(font: ttf, fontSize: 22)),
+              pw.SizedBox(height: 20),
+              pw.Text("Customer: $userName"),
+              pw.Text("Phone: $phoneNumber"),
+              pw.SizedBox(height: 10),
+              ...invoices.map((e) => pw.Text(
+                "${e.itemName} x${e.qty} = ₹${(e.price * e.qty).toStringAsFixed(2)}",
+                style: pw.TextStyle(font: ttf),
+              )),
+              pw.SizedBox(height: 20),
+              pw.Text(
+                'Grand Total: ₹${invoices.fold<double>(0, (sum, item) => sum + (item.price * item.qty)).toStringAsFixed(2)}',
+                style: pw.TextStyle(font: ttf, fontSize: 18),
+              ),
+            ],
+          );
+        },
+      ),
+    );
+
+    // ✅ Show preview before sharing
+    await Printing.layoutPdf(
+      onLayout: (PdfPageFormat format) async => pdf.save(),
+    );
   }
 }

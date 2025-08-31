@@ -2,3 +2,8 @@ export 'bash_controller.dart';
 export 'splash_controller.dart';
 export 'home_controller.dart';
 export 'item_controller.dart';
+export 'auth_controller.dart';
+export 'company_controller.dart';
+export 'dashboard_controller.dart';
+export 'customer_registration_controller.dart';
+export 'setting_controller.dart';

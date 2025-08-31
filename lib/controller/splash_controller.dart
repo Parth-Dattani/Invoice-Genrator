@@ -12,8 +12,8 @@ class SplashController extends BaseController{
 
 
   void goToNext(){
-    Future.delayed(Duration(seconds: 3), () {
-      Get.offAndToNamed(ItemScreen.pageId);
+    Future.delayed(Duration(seconds: 5), () {
+      Get.offAndToNamed(AuthScreen.pageId);
     },).then((value) {
       print("Awaittteddddd.............");
     },);

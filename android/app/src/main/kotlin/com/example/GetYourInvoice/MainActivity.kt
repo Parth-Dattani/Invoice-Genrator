@@ -1,4 +1,4 @@
-package com.example.demo_prac_getx
+package com.example.GetYourInvoice
 
 import io.flutter.embedding.android.FlutterActivity
 

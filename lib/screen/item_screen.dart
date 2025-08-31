@@ -2,9 +2,1108 @@ import 'package:demo_prac_getx/constant/app_colors.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../controller/item_controller.dart';
+import '../controller/item_controller_old.dart';
 import '../model/model.dart';
 import '../utils/pdf_helper.dart';
 import '../widgets/widgets.dart';
+
+// class ItemScreen extends GetView<ItemController> {
+//   static const pageId = "/ItemScreen";
+//
+//   const ItemScreen({super.key});
+//
+//
+//   @override
+//   Widget build(BuildContext context) {
+//     return Scaffold(
+//       appBar: AppBar(
+//         backgroundColor: AppColors.tealColor,
+//         leading: Icon(Icons.menu, color: AppColors.whiteColor),
+//         title: Text(
+//           "Items",
+//           style: TextStyle(color: AppColors.whiteColor),
+//         ),
+//         actions: [
+//           Obx(() {
+//             return Stack(
+//               children: [
+//                 IconButton(
+//                   icon: Icon(Icons.shopping_cart, color: AppColors.whiteColor),
+//                   onPressed: controller.cart.isEmpty
+//                       ? null
+//                       : () => _showCartDialog(context),
+//                 ),
+//                 if (controller.cart.isNotEmpty)
+//                   Positioned(
+//                     right: 8,
+//                     top: 8,
+//                     child: CircleAvatar(
+//                       radius: 8,
+//                       backgroundColor: Colors.red,
+//                       child: Text(
+//                         "${controller.cart.length}",
+//                         style: TextStyle(fontSize: 10, color: Colors.white),
+//                       ),
+//                     ),
+//                   ),
+//               ],
+//             );
+//           }),
+//         ],
+//       ),
+//       body: Obx(() {
+//         if (controller.isLoading.value) {
+//           return Center(child: CircularProgressIndicator());
+//         }
+//         return ListView.builder(
+//           itemCount: controller.itemList.length,
+//           itemBuilder: (context, index) {
+//             final item = controller.itemList[index];
+//             return Card(
+//               margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+//               elevation: 2,
+//               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+//               child: ListTile(
+//                 contentPadding: EdgeInsets.all(12),
+//                 title: Text(
+//                   item.itemName,
+//                   style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+//                 ),
+//                 subtitle: Text(
+//                   "₹${item.price.toStringAsFixed(2)}",
+//                   style: TextStyle(color: Colors.grey.shade600),
+//                 ),
+//                 trailing: Row(
+//                   mainAxisSize: MainAxisSize.min,
+//                   children: [
+//                     // IconButton(
+//                     //   icon: const Icon(Icons.add, color: Colors.blue),
+//                     //   onPressed: () {},
+//                     // ),
+//                     addToCartBtn(item),
+//                     IconButton(
+//                       icon: const Icon(Icons.edit, color: Colors.blue),
+//                       onPressed: () {},
+//                     ),
+//                     IconButton(
+//                       icon: const Icon(Icons.delete, color: Colors.red),
+//                       onPressed: () {},
+//                     ),
+//                   ],
+//                 ),
+//               ),
+//             );
+//           },
+//         );
+//       }),
+//       floatingActionButton: FloatingActionButton(
+//         backgroundColor: AppColors.tealColor,
+//         onPressed: () => _showAddItemDialog(context),
+//         child: Icon(Icons.add, color: AppColors.whiteColor),
+//       ),
+//     );
+//   }
+//
+//   void _showAddItemDialog(BuildContext context) {
+//     final nameCtrl = TextEditingController();
+//     final priceCtrl = TextEditingController();
+//
+//     showDialog(
+//       context: context,
+//       barrierDismissible: false,
+//       builder: (_) {
+//         bool isAdding = false;
+//
+//         return StatefulBuilder(
+//           builder: (context, setState) {
+//             return Dialog(
+//               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+//               elevation: 8,
+//               insetPadding: EdgeInsets.all(16),
+//               child: Container(
+//                 padding: EdgeInsets.all(16),
+//                 constraints: BoxConstraints(
+//                   maxHeight: MediaQuery.of(context).size.height * 0.5,
+//                   maxWidth: 400,
+//                 ),
+//                 decoration: BoxDecoration(
+//                   color: Colors.white,
+//                   borderRadius: BorderRadius.circular(16),
+//                   boxShadow: [
+//                     BoxShadow(
+//                       color: Colors.black.withOpacity(0.1),
+//                       blurRadius: 10,
+//                       offset: Offset(0, 4),
+//                     ),
+//                   ],
+//                 ),
+//                 child: Column(
+//                   mainAxisSize: MainAxisSize.min,
+//                   crossAxisAlignment: CrossAxisAlignment.start,
+//                   children: [
+//                     Row(
+//                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
+//                       children: [
+//                         Text(
+//                           "Add New Item",
+//                           style: TextStyle(
+//                             fontSize: 20,
+//                             fontWeight: FontWeight.bold,
+//                             color: AppColors.tealColor,
+//                           ),
+//                         ),
+//                         IconButton(
+//                           icon: Icon(Icons.close, color: AppColors.tealColor),
+//                           onPressed: isAdding ? null : () => Navigator.pop(context),
+//                         ),
+//                       ],
+//                     ),
+//                     SizedBox(height: 16),
+//                     TextFormField(
+//                       controller: nameCtrl,
+//                       decoration: InputDecoration(
+//                         labelText: "Item Name",
+//                         hintText: "Enter item name",
+//                         border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+//                         filled: true,
+//                         fillColor: Colors.grey.shade50,
+//                         prefixIcon: Icon(Icons.label_outline, color: AppColors.tealColor),
+//                       ),
+//                       enabled: !isAdding,
+//                     ),
+//                     SizedBox(height: 12),
+//                     TextFormField(
+//                       controller: priceCtrl,
+//                       decoration: InputDecoration(
+//                         labelText: "Price",
+//                         hintText: "Enter price",
+//                         border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+//                         filled: true,
+//                         fillColor: Colors.grey.shade50,
+//                         prefixIcon: Icon(Icons.currency_rupee_outlined, color: AppColors.tealColor),
+//                       ),
+//                       keyboardType: TextInputType.number,
+//                       enabled: !isAdding,
+//                     ),
+//                     SizedBox(height: 20),
+//                     Row(
+//                       mainAxisAlignment: MainAxisAlignment.end,
+//                       children: [
+//                         TextButton(
+//                           onPressed: isAdding ? null : () => Navigator.pop(context),
+//                           child: Text(
+//                             "Cancel",
+//                             style: TextStyle(
+//                               color: Colors.grey.shade700,
+//                               fontSize: 16,
+//                               fontWeight: FontWeight.w600,
+//                             ),
+//                           ),
+//                         ),
+//                         SizedBox(width: 8),
+//                         ElevatedButton(
+//                           style: ElevatedButton.styleFrom(
+//                             backgroundColor: AppColors.tealColor,
+//                             foregroundColor: AppColors.whiteColor,
+//                             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+//                             padding: EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+//                             elevation: 3,
+//                           ),
+//                           onPressed: isAdding
+//                               ? null
+//                               : () async {
+//                             setState(() => isAdding = true);
+//
+//                             final name = nameCtrl.text.trim();
+//                             final price = double.tryParse(priceCtrl.text) ?? 0.0;
+//
+//                             if (name.isEmpty) {
+//                               setState(() => isAdding = false);
+//                               showCustomSnackbar(
+//                                 title: "Error",
+//                                 message: "Item name cannot be empty",
+//                                 baseColor: Colors.red.shade700,
+//                                 icon: Icons.error_outline,
+//                               );
+//                               return;
+//                             }
+//                             if (price <= 0) {
+//                               setState(() => isAdding = false);
+//                               showCustomSnackbar(
+//                                 title: "Error",
+//                                 message: "Price must be greater than 0",
+//                                 baseColor: Colors.red.shade700,
+//                                 icon: Icons.error_outline,
+//                               );
+//                               return;
+//                             }
+//
+//                             try {
+//                               await controller.addNewItem(name, price);
+//                               Navigator.pop(context);
+//                             } catch (e) {
+//                             setState(() => isAdding = false);
+//                               showCustomSnackbar(
+//                                 title: "Error",
+//                                 message: "Failed to save item: $e",
+//                                 baseColor: Colors.red.shade700,
+//                                 icon: Icons.error_outline,
+//                               );
+//                             }
+//                           },
+//                           child: isAdding
+//                               ? SizedBox(
+//                             width: 20,
+//                             height: 20,
+//                             child: CircularProgressIndicator(
+//                               strokeWidth: 2,
+//                               valueColor: AlwaysStoppedAnimation<Color>(AppColors.whiteColor),
+//                             ),
+//                           )
+//                               : Text(
+//                             "Add",
+//                             style: TextStyle(
+//                               fontSize: 16,
+//                               fontWeight: FontWeight.w600,
+//                             ),
+//                           ),
+//                         ),
+//                       ],
+//                     ),
+//                   ],
+//                 ),
+//               ),
+//             );
+//           },
+//         );
+//       },
+//     );
+//   }
+//
+//   void _showCartDialog(BuildContext context) {
+//     final nameCtrl = TextEditingController();
+//     final phoneCtrl = TextEditingController();
+//     final formKey = GlobalKey<FormState>();
+//     bool isFormValid = false;
+//
+//     showDialog(
+//       context: context,
+//       barrierDismissible: false,
+//       builder: (_) {
+//         return StatefulBuilder(
+//           builder: (context, setState) {
+//             void validateForm() {
+//               final isValid = formKey.currentState?.validate() ?? false;
+//               if (isValid != isFormValid) {
+//                 setState(() {
+//                   isFormValid = isValid;
+//                 });
+//               }
+//             }
+//
+//             return Dialog(
+//               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+//               elevation: 8,
+//               insetPadding: EdgeInsets.all(16),
+//               child: Container(
+//                 constraints: BoxConstraints(
+//                   maxHeight: MediaQuery.of(context).size.height * 0.85,
+//                   maxWidth: 400,
+//                 ),
+//                 decoration: BoxDecoration(
+//                   color: Colors.white,
+//                   borderRadius: BorderRadius.circular(16),
+//                   boxShadow: [
+//                     BoxShadow(
+//                       color: Colors.black.withOpacity(0.1),
+//                       blurRadius: 10,
+//                       offset: Offset(0, 4),
+//                     ),
+//                   ],
+//                 ),
+//                 child: Column(
+//                   mainAxisSize: MainAxisSize.min,
+//                   children: [
+//                     Container(
+//                       padding: EdgeInsets.all(16),
+//                       decoration: BoxDecoration(
+//                         color: AppColors.tealColor.withOpacity(0.1),
+//                         borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+//                       ),
+//                       child: Row(
+//                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
+//                         children: [
+//                           Text(
+//                             "Your Cart",
+//                             style: TextStyle(
+//                               fontSize: 20,
+//                               fontWeight: FontWeight.bold,
+//                               color: AppColors.tealColor,
+//                             ),
+//                           ),
+//                           IconButton(
+//                             icon: Icon(Icons.close, color: AppColors.tealColor),
+//                             onPressed: () => Navigator.pop(context),
+//                           ),
+//                         ],
+//                       ),
+//                     ),
+//                     Expanded(
+//                       child: Obx(() {
+//                         if (controller.cart.isEmpty) {
+//                           return Center(
+//                             child: Column(
+//                               mainAxisSize: MainAxisSize.min,
+//                               children: [
+//                                 Icon(Icons.shopping_cart_outlined, size: 64, color: Colors.grey.shade400),
+//                                 SizedBox(height: 8),
+//                                 Text(
+//                                   "Your cart is empty",
+//                                   style: TextStyle(fontSize: 16, color: Colors.grey.shade600),
+//                                 ),
+//                               ],
+//                             ),
+//                           );
+//                         }
+//                         return ListView.builder(
+//                           shrinkWrap: true,
+//                           padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+//                           itemCount: controller.cart.length,
+//                           itemBuilder: (context, index) {
+//                             final item = controller.cart[index];
+//                             return Card(
+//                               margin: EdgeInsets.symmetric(vertical: 8),
+//                               elevation: 2,
+//                               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+//                               child: ListTile(
+//                                 contentPadding: EdgeInsets.all(12),
+//                                 title: Text(
+//                                   "${item.itemName}",
+//                                   style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+//                                 ),
+//                                 subtitle: Text(
+//                                   "₹${item.price.toStringAsFixed(2)} x ${item.qty} = ₹${(item.price * item.qty).toStringAsFixed(2)}",
+//                                   style: TextStyle(color: Colors.grey.shade600),
+//                                 ),
+//                                 trailing: Row(
+//                                   mainAxisSize: MainAxisSize.min,
+//                                   children: [
+//                                     IconButton(
+//                                       icon: Icon(Icons.remove_circle_outline, color: Colors.red.shade400),
+//                                       onPressed: () {
+//                                         if (item.qty > 1) {
+//                                           controller.cart[index] = Invoice(
+//                                             invoiceId: item.invoiceId,
+//                                             itemId: item.itemId,
+//                                             itemName: item.itemName,
+//                                             qty: item.qty - 1,
+//                                             price: item.price,
+//                                             mobile: item.mobile,
+//                                             customerName: item.customerName,
+//                                           );
+//                                           showCustomSnackbar(
+//                                             title: "Updated",
+//                                             message: "${item.itemName} quantity decreased to ${item.qty - 1}",
+//                                             baseColor: AppColors.darkGreenColor,
+//                                             icon: Icons.remove_shopping_cart,
+//                                           );
+//                                         } else {
+//                                           controller.removeFromCart(item.itemId);
+//                                           showCustomSnackbar(
+//                                             title: "Removed",
+//                                             message: "${item.itemName} removed from cart",
+//                                             baseColor: Colors.red.shade700,
+//                                             icon: Icons.delete_outline,
+//                                           );
+//                                         }
+//                                       },
+//                                     ),
+//                                     Text(
+//                                       "${item.qty}",
+//                                       style: TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
+//                                     ),
+//                                     IconButton(
+//                                       icon: Icon(Icons.add_circle_outline, color: AppColors.darkGreenColor),
+//                                       onPressed: () {
+//                                         controller.cart[index] = Invoice(
+//                                           invoiceId: item.invoiceId,
+//                                           itemId: item.itemId,
+//                                           itemName: item.itemName,
+//                                           qty: item.qty + 1,
+//                                           price: item.price,
+//                                           mobile: item.mobile,
+//                                           customerName: item.customerName,
+//                                         );
+//                                         showCustomSnackbar(
+//                                           title: "Updated",
+//                                           message: "${item.itemName} quantity increased to ${item.qty + 1}",
+//                                           baseColor: AppColors.darkGreenColor,
+//                                           icon: Icons.add_shopping_cart,
+//                                         );
+//                                       },
+//                                     ),
+//                                     IconButton(
+//                                       icon: Icon(Icons.delete_outline, color: Colors.red.shade400),
+//                                       onPressed: () {
+//                                         controller.removeFromCart(item.itemId);
+//                                         showCustomSnackbar(
+//                                           title: "Removed",
+//                                           message: "${item.itemName} removed from cart",
+//                                           baseColor: Colors.red.shade700,
+//                                           icon: Icons.delete_outline,
+//                                         );
+//                                       },
+//                                     ),
+//                                   ],
+//                                 ),
+//                               ),
+//                             );
+//                           },
+//                         );
+//                       }),
+//                     ),
+//                     Divider(height: 1, thickness: 1),
+//                     Padding(
+//                       padding: EdgeInsets.all(16),
+//                       child: Form(
+//                         key: formKey,
+//                         child: Column(
+//                           children: [
+//                             TextFormField(
+//                               controller: nameCtrl,
+//                               decoration: InputDecoration(
+//                                 labelText: "User Name",
+//                                 hintText: "Enter your name",
+//                                 border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+//                                 filled: true,
+//                                 fillColor: Colors.grey.shade50,
+//                                 prefixIcon: Icon(Icons.person_outline, color: AppColors.tealColor),
+//                               ),
+//                               validator: (value) => value == null || value.trim().isEmpty ? "Enter name" : null,
+//                               onChanged: (value) => validateForm(),
+//                             ),
+//                             SizedBox(height: 12),
+//                             TextFormField(
+//                               controller: phoneCtrl,
+//                               decoration: InputDecoration(
+//                                 labelText: "Phone Number",
+//                                 hintText: "Enter 10-digit phone number",
+//                                 border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+//                                 filled: true,
+//                                 fillColor: Colors.grey.shade50,
+//                                 prefixIcon: Icon(Icons.phone_outlined, color: AppColors.tealColor),
+//                               ),
+//                               keyboardType: TextInputType.phone,
+//                               validator: (value) {
+//                                 if (value == null || value.trim().isEmpty) return "Enter phone";
+//                                 if (!RegExp(r'^\d{10}$').hasMatch(value.trim())) return "Enter valid 10-digit number";
+//                                 return null;
+//                               },
+//                               onChanged: (value) => validateForm(),
+//                             ),
+//                           ],
+//                         ),
+//                       ),
+//                     ),
+//                     Container(
+//                       padding: EdgeInsets.all(16),
+//                       decoration: BoxDecoration(
+//                         color: AppColors.tealColor.withOpacity(0.1),
+//                         borderRadius: BorderRadius.vertical(bottom: Radius.circular(16)),
+//                       ),
+//                       child: Obx(() {
+//                         final double total = controller.cart.fold(0, (sum, item) => sum + (item.price * item.qty));
+//                         return Column(
+//                           children: [
+//                             Text(
+//                               "Total: ₹${total.toStringAsFixed(2)}",
+//                               style: TextStyle(
+//                                 fontSize: 18,
+//                                 fontWeight: FontWeight.bold,
+//                                 color: AppColors.tealColor,
+//                               ),
+//                             ),
+//                             SizedBox(height: 12),
+//                             ElevatedButton(
+//                               style: ElevatedButton.styleFrom(
+//                                 backgroundColor: AppColors.tealColor,
+//                                 foregroundColor: AppColors.whiteColor,
+//                                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+//                                 minimumSize: Size(double.infinity, 50),
+//                                 elevation: 3,
+//                               ),
+//                               onPressed: isFormValid && controller.cart.isNotEmpty
+//                                   ? () async {
+//                                 final phone = phoneCtrl.text.trim();
+//                                 final userName = nameCtrl.text.trim();
+//
+//                                 try {
+//                                   // Save to invoices table with userName
+//
+// final cartCopy = controller.cart.toList();
+// final saved = await controller.saveInvoice(cartCopy, userName, phone);
+// if (saved) {
+//   await InvoiceHelper.generateAndShareInvoice(cartCopy, userName, phone);
+//   // Now you can clear the cart if you want
+//   controller.clearCart();
+//
+// }
+//                                   Navigator.pop(context);
+//                                   showCustomSnackbar(
+//                                     title: "Success",
+//                                     message: "Invoice saved successfully!",
+//                                     baseColor: AppColors.darkGreenColor,
+//                                     icon: Icons.check_circle_outline,
+//                                   );
+//                                 } catch (e) {
+//                                   showCustomSnackbar(
+//                                     title: "Error",
+//                                     message: "Failed to save invoice: $e",
+//                                     baseColor: Colors.red.shade700,
+//                                     icon: Icons.error_outline,
+//                                   );
+//                                 }
+//                               }
+//                                   : null,
+//                               child: Text(
+//                                 "Generate Invoice",
+//                                 style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+//                               ),
+//                             ),
+//                           ],
+//                         );
+//                       }),
+//                     ),
+//                   ],
+//                 ),
+//               ),
+//             );
+//           },
+//         );
+//       },
+//     );
+//   }
+//
+//   Widget addToCartBtn(Item item){
+//
+//
+//     ScaleTransition(
+//       scale: _scaleAnimation,
+//       child: ElevatedButton(
+//         style: ElevatedButton.styleFrom(
+//           backgroundColor: AppColors.tealColor,
+//           foregroundColor: AppColors.whiteColor,
+//           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+//           padding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+//           elevation: 3,
+//           minimumSize: Size(100, 36),
+//         ),
+//         onPressed: _isAdding
+//             ? null
+//             : () async {
+//           setState(() {
+//             _isAdding = true;
+//           });
+//           _controller.forward().then((_) => _controller.reverse());
+//           controller.addToCart(widget.item);
+//           await Future.delayed(Duration(milliseconds: 300));
+//           if (mounted) {
+//             setState(() {
+//               _isAdding = false;
+//             });
+//           }
+//           if (widget.onPressed != null) {
+//             widget.onPressed!();
+//           }
+//         },
+//         child: _isAdding
+//             ? SizedBox(
+//           width: 20,
+//           height: 20,
+//           child: CircularProgressIndicator(
+//             strokeWidth: 2,
+//             valueColor: AlwaysStoppedAnimation<Color>(AppColors.whiteColor),
+//           ),
+//         )
+//             : Row(
+//           mainAxisSize: MainAxisSize.min,
+//           children: [
+//             Icon(Icons.add_shopping_cart, size: 18),
+//             SizedBox(width: 6),
+//             Text(
+//               "Add",
+//               style: TextStyle(
+//                 fontSize: 12,
+//                 fontWeight: FontWeight.w600,
+//               ),
+//             ),
+//           ],
+//         ),
+//       ),
+//     );
+//   }
+//
+//
+//   void _showEditItemDialog(BuildContext context, Item item) {
+//   final nameCtrl = TextEditingController(text: item.itemName);
+//   final priceCtrl = TextEditingController(text: item.price.toString());
+//
+//   showDialog(
+//     context: context,
+//     barrierDismissible: false,
+//     builder: (_) {
+//       return AlertDialog(
+//         title: const Text("Edit Item"),
+//         content: Column(
+//           mainAxisSize: MainAxisSize.min,
+//           children: [
+//             TextField(
+//               controller: nameCtrl,
+//               decoration: const InputDecoration(labelText: "Item Name"),
+//             ),
+//             TextField(
+//               controller: priceCtrl,
+//               keyboardType: TextInputType.number,
+//               decoration: const InputDecoration(labelText: "Price"),
+//             ),
+//           ],
+//         ),
+//         actions: [
+//           TextButton(
+//             onPressed: () => Navigator.pop(context),
+//             child: const Text("Cancel"),
+//           ),
+//           ElevatedButton(
+//             onPressed: () async {
+//               final newName = nameCtrl.text.trim();
+//               final newPrice = double.tryParse(priceCtrl.text) ?? 0.0;
+//
+//               if (newName.isNotEmpty && newPrice > 0) {
+//                 // await controller.editItem(
+//                 //   item.itemId,
+//                 //   newName,
+//                 //   newPrice,
+//                 // );
+//                 Navigator.pop(context);
+//               }
+//             },
+//             child: const Text("Save"),
+//           ),
+//         ],
+//       );
+//     },
+//   );
+// }
+//
+// }
+
+// class AddToCartButton extends StatefulWidget {
+//   final Item item;
+//   final VoidCallback? onPressed;
+//
+//   const AddToCartButton({
+//     super.key,
+//     required this.item,
+//     this.onPressed,
+//   });
+//
+//   @override
+//   _AddToCartButtonState createState() => _AddToCartButtonState();
+// }
+//
+// class _AddToCartButtonState extends State<AddToCartButton> with SingleTickerProviderStateMixin {
+//   late AnimationController _controller;
+//   late Animation<double> _scaleAnimation;
+//   bool _isAdding = false;
+//
+//   @override
+//   void initState() {
+//     super.initState();
+//     _controller = AnimationController(
+//       vsync: this,
+//       duration: Duration(milliseconds: 200),
+//     );
+//     _scaleAnimation = Tween<double>(begin: 1.0, end: 0.9).animate(
+//       CurvedAnimation(parent: _controller, curve: Curves.easeInOut),
+//     );
+//   }
+//
+//   @override
+//   void dispose() {
+//     _controller.dispose();
+//     super.dispose();
+//   }
+//
+//   @override
+//   Widget build(BuildContext context) {
+//     final ItemController controller = Get.find();
+//
+//     return ScaleTransition(
+//       scale: _scaleAnimation,
+//       child: ElevatedButton(
+//         style: ElevatedButton.styleFrom(
+//           backgroundColor: AppColors.tealColor,
+//           foregroundColor: AppColors.whiteColor,
+//           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+//           padding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+//           elevation: 3,
+//           minimumSize: Size(100, 36),
+//         ),
+//         onPressed: _isAdding
+//             ? null
+//             : () async {
+//           setState(() {
+//             _isAdding = true;
+//           });
+//           _controller.forward().then((_) => _controller.reverse());
+//           controller.addToCart(widget.item);
+//           await Future.delayed(Duration(milliseconds: 300));
+//           if (mounted) {
+//             setState(() {
+//               _isAdding = false;
+//             });
+//           }
+//           if (widget.onPressed != null) {
+//             widget.onPressed!();
+//           }
+//         },
+//         child: _isAdding
+//             ? SizedBox(
+//           width: 20,
+//           height: 20,
+//           child: CircularProgressIndicator(
+//             strokeWidth: 2,
+//             valueColor: AlwaysStoppedAnimation<Color>(AppColors.whiteColor),
+//           ),
+//         )
+//             : Row(
+//           mainAxisSize: MainAxisSize.min,
+//           children: [
+//             Icon(Icons.add_shopping_cart, size: 18),
+//             SizedBox(width: 6),
+//             Text(
+//               "Add",
+//               style: TextStyle(
+//                 fontSize: 12,
+//                 fontWeight: FontWeight.w600,
+//               ),
+//             ),
+//           ],
+//         ),
+//       ),
+//     );
+//   }
+// }
+///new
+// class ItemScreen extends GetView<ItemController> {
+//   static const pageId = "/ItemScreen";
+//
+//   const ItemScreen({super.key});
+//
+//   @override
+//   Widget build(BuildContext context) {
+//     return Scaffold(
+//       appBar: AppBar(
+//         backgroundColor: AppColors.tealColor,
+//         leading:  Icon(Icons.menu, color: AppColors.whiteColor),
+//         title:  Text(
+//           "Items",
+//           style: TextStyle(color: AppColors.whiteColor),
+//         ),
+//         actions: [
+//           Obx(() {
+//             return Stack(
+//               children: [
+//                 IconButton(
+//                   icon:  Icon(Icons.shopping_cart, color: AppColors.whiteColor),
+//                   onPressed: controller.cart.isEmpty
+//                       ? null
+//                       : () => _showCartDialog(context),
+//                 ),
+//                 if (controller.cart.isNotEmpty)
+//                   Positioned(
+//                     right: 8,
+//                     top: 8,
+//                     child: CircleAvatar(
+//                       radius: 8,
+//                       backgroundColor: Colors.red,
+//                       child: Text(
+//                         "${controller.cart.length}",
+//                         style: const TextStyle(fontSize: 10, color: Colors.white),
+//                       ),
+//                     ),
+//                   ),
+//               ],
+//             );
+//           }),
+//         ],
+//       ),
+//       body: Obx(() {
+//         if (controller.isLoading.value) {
+//           return const Center(child: CircularProgressIndicator());
+//         }
+//         return ListView.builder(
+//           itemCount: controller.itemList.length,
+//           itemBuilder: (context, index) {
+//             final item = controller.itemList[index];
+//             return Card(
+//               margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+//               elevation: 2,
+//               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+//               child: ListTile(
+//                 contentPadding: const EdgeInsets.all(12),
+//                 title: Text(
+//                   item.itemName,
+//                   style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+//                 ),
+//                 subtitle: Text(
+//                   "₹${item.price.toStringAsFixed(2)}",
+//                   style: TextStyle(color: Colors.grey.shade600),
+//                 ),
+//                 trailing: Row(
+//                   mainAxisSize: MainAxisSize.min,
+//                   children: [
+//                     addToCartBtn(item),
+//                     IconButton(
+//                       icon: const Icon(Icons.edit, color: Colors.blue),
+//                       onPressed: () {
+//                         _showEditItemDialog(context, item);
+//                       },
+//                     ),
+//                     // IconButton(
+//                     //   icon: const Icon(Icons.delete, color: Colors.red),
+//                     //   onPressed: () => _confirmDelete(context, item),
+//                     // ),
+//                   ],
+//                 ),
+//               ),
+//             );
+//           },
+//         );
+//       }),
+//       floatingActionButton: FloatingActionButton(
+//         backgroundColor: AppColors.tealColor,
+//         onPressed: () => _showAddItemDialog(context),
+//         child:  Icon(Icons.add, color: AppColors.whiteColor),
+//       ),
+//     );
+//   }
+//
+//   /// ✅ Add to Cart Button
+//   Widget addToCartBtn(Item item) {
+//     return Obx(() {
+//       final inCart = controller.cart.any((e) => e.itemId == item.itemId);
+//
+//       return ElevatedButton.icon(
+//         style: ElevatedButton.styleFrom(
+//           backgroundColor: inCart ? Colors.orange : AppColors.tealColor,
+//           foregroundColor: Colors.white,
+//           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+//           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+//           minimumSize: const Size(90, 36),
+//         ),
+//         icon: Icon(inCart ? Icons.check : Icons.add_shopping_cart, size: 18),
+//         label: Text(
+//           inCart ? "Added" : "Add",
+//           style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
+//         ),
+//         onPressed: () {
+//           if (!inCart) {
+//             controller.addToCart(item);
+//             showCustomSnackbar(
+//               title: "Added",
+//               message: "${item.itemName} added to cart",
+//               baseColor: AppColors.darkGreenColor,
+//               icon: Icons.add_shopping_cart,
+//             );
+//           } else {
+//             // optional: open cart directly if already added
+//             _showCartDialog(Get.context!);
+//           }
+//         },
+//       );
+//     });
+//   }
+//
+//   void _showAddItemDialog(BuildContext context) {
+//     final nameCtrl = TextEditingController();
+//     final priceCtrl = TextEditingController();
+//
+//     showDialog(
+//       context: context,
+//       barrierDismissible: false,
+//       builder: (_) {
+//         bool isAdding = false;
+//
+//         return StatefulBuilder(
+//           builder: (context, setState) {
+//             return Dialog(
+//               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+//               elevation: 8,
+//               insetPadding: EdgeInsets.all(16),
+//               child: Container(
+//                 padding: EdgeInsets.all(16),
+//                 constraints: BoxConstraints(
+//                   maxHeight: MediaQuery.of(context).size.height * 0.5,
+//                   maxWidth: 400,
+//                 ),
+//                 decoration: BoxDecoration(
+//                   color: Colors.white,
+//                   borderRadius: BorderRadius.circular(16),
+//                   boxShadow: [
+//                     BoxShadow(
+//                       color: Colors.black.withOpacity(0.1),
+//                       blurRadius: 10,
+//                       offset: Offset(0, 4),
+//                     ),
+//                   ],
+//                 ),
+//                 child: Column(
+//                   mainAxisSize: MainAxisSize.min,
+//                   crossAxisAlignment: CrossAxisAlignment.start,
+//                   children: [
+//                     Row(
+//                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
+//                       children: [
+//                         Text(
+//                           "Add New Item",
+//                           style: TextStyle(
+//                             fontSize: 20,
+//                             fontWeight: FontWeight.bold,
+//                             color: AppColors.tealColor,
+//                           ),
+//                         ),
+//                         IconButton(
+//                           icon: Icon(Icons.close, color: AppColors.tealColor),
+//                           onPressed: isAdding ? null : () => Navigator.pop(context),
+//                         ),
+//                       ],
+//                     ),
+//                     SizedBox(height: 16),
+//                     TextFormField(
+//                       controller: nameCtrl,
+//                       decoration: InputDecoration(
+//                         labelText: "Item Name",
+//                         hintText: "Enter item name",
+//                         border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+//                         filled: true,
+//                         fillColor: Colors.grey.shade50,
+//                         prefixIcon: Icon(Icons.label_outline, color: AppColors.tealColor),
+//                       ),
+//                       enabled: !isAdding,
+//                     ),
+//                     SizedBox(height: 12),
+//                     TextFormField(
+//                       controller: priceCtrl,
+//                       decoration: InputDecoration(
+//                         labelText: "Price",
+//                         hintText: "Enter price",
+//                         border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+//                         filled: true,
+//                         fillColor: Colors.grey.shade50,
+//                         prefixIcon: Icon(Icons.currency_rupee_outlined, color: AppColors.tealColor),
+//                       ),
+//                       keyboardType: TextInputType.number,
+//                       enabled: !isAdding,
+//                     ),
+//                     SizedBox(height: 20),
+//                     Row(
+//                       mainAxisAlignment: MainAxisAlignment.end,
+//                       children: [
+//                         TextButton(
+//                           onPressed: isAdding ? null : () => Navigator.pop(context),
+//                           child: Text(
+//                             "Cancel",
+//                             style: TextStyle(
+//                               color: Colors.grey.shade700,
+//                               fontSize: 16,
+//                               fontWeight: FontWeight.w600,
+//                             ),
+//                           ),
+//                         ),
+//                         SizedBox(width: 8),
+//                         ElevatedButton(
+//                           style: ElevatedButton.styleFrom(
+//                             backgroundColor: AppColors.tealColor,
+//                             foregroundColor: AppColors.whiteColor,
+//                             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+//                             padding: EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+//                             elevation: 3,
+//                           ),
+//                           onPressed: isAdding
+//                               ? null
+//                               : () async {
+//                             setState(() => isAdding = true);
+//
+//                             final name = nameCtrl.text.trim();
+//                             final price = double.tryParse(priceCtrl.text) ?? 0.0;
+//
+//                             if (name.isEmpty) {
+//                               setState(() => isAdding = false);
+//                               showCustomSnackbar(
+//                                 title: "Error",
+//                                 message: "Item name cannot be empty",
+//                                 baseColor: Colors.red.shade700,
+//                                 icon: Icons.error_outline,
+//                               );
+//                               return;
+//                             }
+//                             if (price <= 0) {
+//                               setState(() => isAdding = false);
+//                               showCustomSnackbar(
+//                                 title: "Error",
+//                                 message: "Price must be greater than 0",
+//                                 baseColor: Colors.red.shade700,
+//                                 icon: Icons.error_outline,
+//                               );
+//                               return;
+//                             }
+//
+//                             try {
+//                               await controller.addNewItem(
+//                                     name: name, price: price,
+//
+//                               );
+//                               Navigator.pop(context);
+//                             } catch (e) {
+//                               setState(() => isAdding = false);
+//                               showCustomSnackbar(
+//                                 title: "Error",
+//                                 message: "Failed to save item: $e",
+//                                 baseColor: Colors.red.shade700,
+//                                 icon: Icons.error_outline,
+//                               );
+//                             }
+//                           },
+//                           child: isAdding
+//                               ? SizedBox(
+//                             width: 20,
+//                             height: 20,
+//                             child: CircularProgressIndicator(
+//                               strokeWidth: 2,
+//                               valueColor: AlwaysStoppedAnimation<Color>(AppColors.whiteColor),
+//                             ),
+//                           )
+//                               : Text(
+//                             "Add",
+//                             style: TextStyle(
+//                               fontSize: 16,
+//                               fontWeight: FontWeight.w600,
+//                             ),
+//                           ),
+//                         ),
+//                       ],
+//                     ),
+//                   ],
+//                 ),
+//               ),
+//             );
+//           },
+//         );
+//       },
+//     );
+//   }
+
 
 class ItemScreen extends GetView<ItemController> {
   static const pageId = "/ItemScreen";
@@ -18,10 +1117,23 @@ class ItemScreen extends GetView<ItemController> {
         backgroundColor: AppColors.tealColor,
         leading: Icon(Icons.menu, color: AppColors.whiteColor),
         title: Text(
-          "Items",
+          "Items Management",
           style: TextStyle(color: AppColors.whiteColor),
         ),
         actions: [
+          // Toggle inactive items visibility
+          Obx(() => IconButton(
+            icon: Icon(
+              controller.showInactiveItems.value
+                  ? Icons.visibility_off
+                  : Icons.visibility,
+              color: AppColors.whiteColor,
+            ),
+            onPressed: controller.toggleShowInactive,
+            tooltip: controller.showInactiveItems.value
+                ? 'Hide Inactive Items'
+                : 'Show Inactive Items',
+          )),
           Obx(() {
             return Stack(
               children: [
@@ -40,7 +1152,7 @@ class ItemScreen extends GetView<ItemController> {
                       backgroundColor: Colors.red,
                       child: Text(
                         "${controller.cart.length}",
-                        style: TextStyle(fontSize: 10, color: Colors.white),
+                        style: const TextStyle(fontSize: 10, color: Colors.white),
                       ),
                     ),
                   ),
@@ -51,43 +1163,299 @@ class ItemScreen extends GetView<ItemController> {
       ),
       body: Obx(() {
         if (controller.isLoading.value) {
-          return Center(child: CircularProgressIndicator());
+          return const Center(child: CircularProgressIndicator());
         }
+
+        final items = controller.filteredItemList;
+
+        if (items.isEmpty) {
+          return Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(Icons.inventory_2_outlined, size: 64, color: Colors.grey.shade400),
+                SizedBox(height: 16),
+                Text(
+                  controller.showInactiveItems.value
+                      ? "No items found"
+                      : "No active items found",
+                  style: TextStyle(fontSize: 18, color: Colors.grey.shade600),
+                ),
+                SizedBox(height: 8),
+                Text(
+                  "Add your first item using the + button",
+                  style: TextStyle(fontSize: 14, color: Colors.grey.shade500),
+                ),
+              ],
+            ),
+          );
+        }
+
         return ListView.builder(
-          itemCount: controller.itemList.length,
+          itemCount: items.length,
+          padding: EdgeInsets.all(8),
           itemBuilder: (context, index) {
-            final item = controller.itemList[index];
+            final item = items[index];
             return Card(
-              margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
               elevation: 2,
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-              child: ListTile(
-                contentPadding: EdgeInsets.all(12),
-                title: Text(
-                  item.itemName,
-                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+              child: Container(
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(
+                    color: item.isActive
+                        ? Colors.transparent
+                        : Colors.red.shade300,
+                    width: item.isActive ? 0 : 2,
+                  ),
                 ),
-                subtitle: Text(
-                  "₹${item.price.toStringAsFixed(2)}",
-                  style: TextStyle(color: Colors.grey.shade600),
+                child: ExpansionTile(
+                  tilePadding: EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                  childrenPadding: EdgeInsets.all(16),
+                  leading: Container(
+                    width: 50,
+                    height: 50,
+                    decoration: BoxDecoration(
+                      color: item.isActive
+                          ? AppColors.tealColor.withOpacity(0.1)
+                          : Colors.red.shade50,
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Icon(
+                      Icons.inventory_2_outlined,
+                      color: item.isActive
+                          ? AppColors.tealColor
+                          : Colors.red.shade400,
+                    ),
+                  ),
+                  title: Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          item.itemName,
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w600,
+                            color: item.isActive ? Colors.black : Colors.grey.shade600,
+                            decoration: item.isActive
+                                ? TextDecoration.none
+                                : TextDecoration.lineThrough,
+                          ),
+                        ),
+                      ),
+                      if (!item.isActive)
+                        Container(
+                          padding: EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                          decoration: BoxDecoration(
+                            color: Colors.red.shade100,
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: Text(
+                            "INACTIVE",
+                            style: TextStyle(
+                              fontSize: 10,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.red.shade700,
+                            ),
+                          ),
+                        ),
+                    ],
+                  ),
+                  subtitle: Row(
+                    children: [
+                      Text(
+                        "₹${item.price.toStringAsFixed(2)}",
+                        style: TextStyle(
+                          color: AppColors.tealColor,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      Text(" / ${item.unitOfMeasurement}"),
+                      //Spacer(),
+                      // Container(
+                      //   padding: EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                      //   decoration: BoxDecoration(
+                      //     color: _getStockColor(item.currentStock).withOpacity(0.1),
+                      //     borderRadius: BorderRadius.circular(8),
+                      //   ),
+                      //   child: Text(
+                      //     item.currentStock == -1
+                      //         ? "Unlimited"
+                      //         : "Stock: ${item.currentStock}",
+                      //     style: TextStyle(
+                      //       fontSize: 12,
+                      //       color: _getStockColor(item.currentStock),
+                      //       fontWeight: FontWeight.w500,
+                      //     ),
+                      //   ),
+                      // ),
+                    ],
+                  ),
+                  trailing: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      if (item.isActive) addToCartBtn(item),
+                      SizedBox(width: 4),
+                      IconButton(
+                        icon: const Icon(Icons.edit, color: Colors.blue),
+                        onPressed: () => _showEditItemDialog(context, item),
+                      ),
+                    ],
+                  ),
+                  children: [
+                    _buildItemDetails(item),
+                  ],
                 ),
-                trailing: AddToCartButton(item: item),
               ),
             );
           },
         );
       }),
-      floatingActionButton: FloatingActionButton(
+      floatingActionButton: FloatingActionButton.extended(
         backgroundColor: AppColors.tealColor,
         onPressed: () => _showAddItemDialog(context),
-        child: Icon(Icons.add, color: AppColors.whiteColor),
+        icon: Icon(Icons.add, color: AppColors.whiteColor),
+        label: Text(
+          "Add Item",
+          style: TextStyle(color: AppColors.whiteColor),
+        ),
       ),
     );
+  }
+
+  Widget _buildItemDetails(Item item) {
+    return Container(
+      padding: EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.grey.shade50,
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Expanded(
+                child: _buildDetailRow("Unit", item.unitOfMeasurement),
+              ),
+              Expanded(
+                child: _buildDetailRow("Stock", item.currentStock == -1
+                    ? "Unlimited"
+                    : "${item.currentStock}"),
+              ),
+            ],
+          ),
+          SizedBox(height: 8),
+          Row(
+            children: [
+              Expanded(
+                child: _buildDetailRow("Price", "₹${item.price.toStringAsFixed(2)}"),
+              ),
+              Expanded(
+                child: _buildDetailRow("Status", item.isActive ? "Active" : "Inactive"),
+              ),
+            ],
+          ),
+          if (item.detailRequirement.isNotEmpty) ...[
+            SizedBox(height: 8),
+            _buildDetailRow("Details", item.detailRequirement),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Widget _buildDetailRow(String label, String value) {
+    return Padding(
+      padding: EdgeInsets.symmetric(vertical: 4),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            label,
+            style: TextStyle(
+              fontSize: 12,
+              color: Colors.grey.shade600,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+          SizedBox(height: 2),
+          Text(
+            value,
+            style: TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Color _getStockColor(int stock) {
+    if (stock == -1) return Colors.blue; // Unlimited
+    if (stock <= 0) return Colors.red;    // Out of stock
+    if (stock <= 10) return Colors.orange; // Low stock
+    return Colors.green;                   // Good stock
+  }
+
+  Widget addToCartBtn(Item item) {
+    return Obx(() {
+      final inCart = controller.cart.any((e) => e.itemId == item.itemId);
+      final isOutOfStock = item.currentStock <= 0 && item.currentStock != -1;
+
+      return ElevatedButton.icon(
+        style: ElevatedButton.styleFrom(
+          backgroundColor: isOutOfStock
+              ? Colors.grey.shade400
+              : inCart
+              ? Colors.orange
+              : AppColors.tealColor,
+          foregroundColor: Colors.white,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+          minimumSize: const Size(80, 32),
+        ),
+        icon: Icon(
+          isOutOfStock
+              ? Icons.inventory_2_outlined
+              : inCart
+              ? Icons.check
+              : Icons.add_shopping_cart,
+          size: 16,
+        ),
+        label: Text(
+          isOutOfStock
+              ? "Stock Out"
+              : inCart
+              ? "Added"
+              : "Add",
+          style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w600),
+        ),
+        onPressed: isOutOfStock
+            ? null
+            : () {
+          if (!inCart) {
+            controller.addToCart(item);
+          } else {
+            _showCartDialog(Get.context!);
+          }
+        },
+      );
+    });
   }
 
   void _showAddItemDialog(BuildContext context) {
     final nameCtrl = TextEditingController();
     final priceCtrl = TextEditingController();
+    final stockCtrl = TextEditingController();
+    final detailCtrl = TextEditingController();
+    final formKey = GlobalKey<FormState>();
+
+    String selectedUnit = controller.unitOptions.first;
+    bool isActive = true;
+    bool isUnlimitedStock = false;
 
     showDialog(
       context: context,
@@ -104,154 +1472,244 @@ class ItemScreen extends GetView<ItemController> {
               child: Container(
                 padding: EdgeInsets.all(16),
                 constraints: BoxConstraints(
-                  maxHeight: MediaQuery.of(context).size.height * 0.5,
+                  maxHeight: MediaQuery.of(context).size.height * 0.85,
                   maxWidth: 400,
                 ),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(16),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withOpacity(0.1),
-                      blurRadius: 10,
-                      offset: Offset(0, 4),
-                    ),
-                  ],
-                ),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                child: SingleChildScrollView(
+                  child: Form(
+                    key: formKey,
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(
-                          "Add New Item",
-                          style: TextStyle(
-                            fontSize: 20,
-                            fontWeight: FontWeight.bold,
-                            color: AppColors.tealColor,
-                          ),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Text(
+                              "Add New Item",
+                              style: TextStyle(
+                                fontSize: 20,
+                                fontWeight: FontWeight.bold,
+                                color: AppColors.tealColor,
+                              ),
+                            ),
+                            IconButton(
+                              icon: Icon(Icons.close, color: AppColors.tealColor),
+                              onPressed: isAdding ? null : () => Navigator.pop(context),
+                            ),
+                          ],
                         ),
-                        IconButton(
-                          icon: Icon(Icons.close, color: AppColors.tealColor),
-                          onPressed: isAdding ? null : () => Navigator.pop(context),
+                        SizedBox(height: 16),
+
+                        // Item Name
+                        TextFormField(
+                          controller: nameCtrl,
+                          decoration: InputDecoration(
+                            labelText: "Item Name *",
+                            hintText: "Enter item name",
+                            border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                            filled: true,
+                            fillColor: Colors.grey.shade50,
+                            prefixIcon: Icon(Icons.label_outline, color: AppColors.tealColor),
+                          ),
+                          enabled: !isAdding,
+                          validator: (value) => value?.trim().isEmpty ?? true ? "Item name is required" : null,
+                        ),
+                        SizedBox(height: 12),
+
+                        // Price and Unit Row
+                        Row(
+                          children: [
+                            Expanded(
+                              flex: 2,
+                              child: TextFormField(
+                                controller: priceCtrl,
+                                decoration: InputDecoration(
+                                  labelText: "Price *",
+                                  hintText: "0.00",
+                                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                                  filled: true,
+                                  fillColor: Colors.grey.shade50,
+                                  prefixIcon: Icon(Icons.currency_rupee_outlined, color: AppColors.tealColor),
+                                ),
+                                keyboardType: TextInputType.numberWithOptions(decimal: true),
+                                enabled: !isAdding,
+                                validator: (value) {
+                                  final price = double.tryParse(value ?? '');
+                                  if (price == null || price <= 0) return "Valid price required";
+                                  return null;
+                                },
+                              ),
+                            ),
+                            SizedBox(width: 12),
+                            Expanded(
+                              child: DropdownButtonFormField<String>(
+                                value: selectedUnit,
+                                decoration: InputDecoration(
+                                  labelText: "Unit",
+                                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                                  filled: true,
+                                  fillColor: Colors.grey.shade50,
+                                ),
+                                items: controller.unitOptions.map((unit) {
+                                  return DropdownMenuItem(value: unit, child: Text(unit));
+                                }).toList(),
+                                onChanged: isAdding ? null : (value) {
+                                  setState(() => selectedUnit = value!);
+                                },
+                              ),
+                            ),
+                          ],
+                        ),
+                        SizedBox(height: 12),
+
+                        // Stock Section
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              children: [
+                                Checkbox(
+                                  value: isUnlimitedStock,
+                                  onChanged: isAdding ? null : (value) {
+                                    setState(() {
+                                      isUnlimitedStock = value!;
+                                      if (isUnlimitedStock) stockCtrl.clear();
+                                    });
+                                  },
+                                ),
+                                Text("Unlimited Stock"),
+                              ],
+                            ),
+                            if (!isUnlimitedStock)
+                              TextFormField(
+                                controller: stockCtrl,
+                                decoration: InputDecoration(
+                                  labelText: "Current Stock *",
+                                  hintText: "Enter stock quantity",
+                                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                                  filled: true,
+                                  fillColor: Colors.grey.shade50,
+                                  prefixIcon: Icon(Icons.inventory_2_outlined, color: AppColors.tealColor),
+                                ),
+                                keyboardType: TextInputType.number,
+                                enabled: !isAdding,
+                                validator: (value) {
+                                  if (isUnlimitedStock) return null;
+                                  final stock = int.tryParse(value ?? '');
+                                  if (stock == null || stock < 0) return "Valid stock required";
+                                  return null;
+                                },
+                              ),
+                          ],
+                        ),
+                        SizedBox(height: 12),
+
+                        // Detail Requirements
+                        TextFormField(
+                          controller: detailCtrl,
+                          decoration: InputDecoration(
+                            labelText: "Detail Requirements",
+                            hintText: "Enter additional details (optional)",
+                            border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                            filled: true,
+                            fillColor: Colors.grey.shade50,
+                            prefixIcon: Icon(Icons.notes_outlined, color: AppColors.tealColor),
+                          ),
+                          maxLines: 3,
+                          enabled: !isAdding,
+                        ),
+                        SizedBox(height: 12),
+
+                        // Status Toggle
+                        Row(
+                          children: [
+                            Icon(Icons.toggle_on_outlined, color: AppColors.tealColor),
+                            SizedBox(width: 8),
+                            Text("Status:", style: TextStyle(fontWeight: FontWeight.w500)),
+                            Spacer(),
+                            Switch(
+                              value: isActive,
+                              onChanged: isAdding ? null : (value) {
+                                setState(() => isActive = value);
+                              },
+                              activeColor: AppColors.tealColor,
+                            ),
+                            Text(isActive ? "Active" : "Inactive"),
+                          ],
+                        ),
+                        SizedBox(height: 20),
+
+                        // Action Buttons
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.end,
+                          children: [
+                            TextButton(
+                              onPressed: isAdding ? null : () => Navigator.pop(context),
+                              child: Text(
+                                "Cancel",
+                                style: TextStyle(
+                                  color: Colors.grey.shade700,
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                            ),
+                            SizedBox(width: 8),
+                            ElevatedButton(
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: AppColors.tealColor,
+                                foregroundColor: AppColors.whiteColor,
+                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                                padding: EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                                elevation: 3,
+                              ),
+                              onPressed: isAdding ? null : () async {
+                                if (formKey.currentState!.validate()) {
+                                  setState(() => isAdding = true);
+
+                                  final name = nameCtrl.text.trim();
+                                  final price = double.parse(priceCtrl.text);
+                                  final stock = isUnlimitedStock ? -1 : int.parse(stockCtrl.text);
+                                  final detail = detailCtrl.text.trim();
+
+                                  try {
+                                    await controller.addNewItem(
+                                      name: name,
+                                      price: price,
+                                      unitOfMeasurement: selectedUnit,
+                                      currentStock: stock,
+                                      detailRequirement: detail,
+                                      isActive: isActive,
+                                    );
+                                    Navigator.pop(context);
+                                  } catch (e) {
+                                    setState(() => isAdding = false);
+                                  }
+                                }
+                              },
+                              child: isAdding
+                                  ? SizedBox(
+                                width: 20,
+                                height: 20,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                  valueColor: AlwaysStoppedAnimation<Color>(AppColors.whiteColor),
+                                ),
+                              )
+                                  : Text(
+                                "Add Item",
+                                style: TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                            ),
+                          ],
                         ),
                       ],
                     ),
-                    SizedBox(height: 16),
-                    TextFormField(
-                      controller: nameCtrl,
-                      decoration: InputDecoration(
-                        labelText: "Item Name",
-                        hintText: "Enter item name",
-                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-                        filled: true,
-                        fillColor: Colors.grey.shade50,
-                        prefixIcon: Icon(Icons.label_outline, color: AppColors.tealColor),
-                      ),
-                      enabled: !isAdding,
-                    ),
-                    SizedBox(height: 12),
-                    TextFormField(
-                      controller: priceCtrl,
-                      decoration: InputDecoration(
-                        labelText: "Price",
-                        hintText: "Enter price",
-                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-                        filled: true,
-                        fillColor: Colors.grey.shade50,
-                        prefixIcon: Icon(Icons.currency_rupee_outlined, color: AppColors.tealColor),
-                      ),
-                      keyboardType: TextInputType.number,
-                      enabled: !isAdding,
-                    ),
-                    SizedBox(height: 20),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.end,
-                      children: [
-                        TextButton(
-                          onPressed: isAdding ? null : () => Navigator.pop(context),
-                          child: Text(
-                            "Cancel",
-                            style: TextStyle(
-                              color: Colors.grey.shade700,
-                              fontSize: 16,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                        ),
-                        SizedBox(width: 8),
-                        ElevatedButton(
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: AppColors.tealColor,
-                            foregroundColor: AppColors.whiteColor,
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                            padding: EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-                            elevation: 3,
-                          ),
-                          onPressed: isAdding
-                              ? null
-                              : () async {
-                            setState(() => isAdding = true);
-
-                            final name = nameCtrl.text.trim();
-                            final price = double.tryParse(priceCtrl.text) ?? 0.0;
-
-                            if (name.isEmpty) {
-                              setState(() => isAdding = false);
-                              showCustomSnackbar(
-                                title: "Error",
-                                message: "Item name cannot be empty",
-                                baseColor: Colors.red.shade700,
-                                icon: Icons.error_outline,
-                              );
-                              return;
-                            }
-                            if (price <= 0) {
-                              setState(() => isAdding = false);
-                              showCustomSnackbar(
-                                title: "Error",
-                                message: "Price must be greater than 0",
-                                baseColor: Colors.red.shade700,
-                                icon: Icons.error_outline,
-                              );
-                              return;
-                            }
-
-                            try {
-                              await controller.addNewItem(name, price);
-                              Navigator.pop(context);
-                            } catch (e) {
-                              setState(() => isAdding = false);
-                              showCustomSnackbar(
-                                title: "Error",
-                                message: "Failed to save item: $e",
-                                baseColor: Colors.red.shade700,
-                                icon: Icons.error_outline,
-                              );
-                            }
-                          },
-                          child: isAdding
-                              ? SizedBox(
-                            width: 20,
-                            height: 20,
-                            child: CircularProgressIndicator(
-                              strokeWidth: 2,
-                              valueColor: AlwaysStoppedAnimation<Color>(AppColors.whiteColor),
-                            ),
-                          )
-                              : Text(
-                            "Add",
-                            style: TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
+                  ),
                 ),
               ),
             );
@@ -260,6 +1718,283 @@ class ItemScreen extends GetView<ItemController> {
       },
     );
   }
+
+  void _showEditItemDialog(BuildContext context, Item item) {
+    final nameCtrl = TextEditingController(text: item.itemName);
+    final priceCtrl = TextEditingController(text: item.price.toStringAsFixed(2));
+    final stockCtrl = TextEditingController(
+        text: item.currentStock == -1 ? '' : item.currentStock.toString()
+    );
+    final detailCtrl = TextEditingController(text: item.detailRequirement);
+    final formKey = GlobalKey<FormState>();
+
+    String selectedUnit = item.unitOfMeasurement;
+    bool isActive = item.isActive;
+    bool isUnlimitedStock = item.currentStock == -1;
+
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (_) {
+        bool isSaving = false;
+
+        return StatefulBuilder(
+          builder: (context, setState) {
+            return Dialog(
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+              elevation: 8,
+              insetPadding: EdgeInsets.all(16),
+              child: Container(
+                padding: EdgeInsets.all(16),
+                constraints: BoxConstraints(
+                  maxHeight: MediaQuery.of(context).size.height * 0.85,
+                  maxWidth: 400,
+                ),
+                child: SingleChildScrollView(
+                  child: Form(
+                    key: formKey,
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Text(
+                              "Edit Item",
+                              style: TextStyle(
+                                fontSize: 20,
+                                fontWeight: FontWeight.bold,
+                                color: AppColors.tealColor,
+                              ),
+                            ),
+                            IconButton(
+                              icon: Icon(Icons.close, color: AppColors.tealColor),
+                              onPressed: isSaving ? null : () => Navigator.pop(context),
+                            ),
+                          ],
+                        ),
+                        SizedBox(height: 16),
+
+                        // Item Name
+                        TextFormField(
+                          controller: nameCtrl,
+                          decoration: InputDecoration(
+                            labelText: "Item Name *",
+                            hintText: "Enter item name",
+                            border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                            filled: true,
+                            fillColor: Colors.grey.shade50,
+                            prefixIcon: Icon(Icons.label_outline, color: AppColors.tealColor),
+                          ),
+                          enabled: !isSaving,
+                          validator: (value) => value?.trim().isEmpty ?? true ? "Item name is required" : null,
+                        ),
+                        SizedBox(height: 12),
+
+                        // Price and Unit Row
+                        Row(
+                          children: [
+                            Expanded(
+                              flex: 2,
+                              child: TextFormField(
+                                controller: priceCtrl,
+                                decoration: InputDecoration(
+                                  labelText: "Price *",
+                                  hintText: "0.00",
+                                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                                  filled: true,
+                                  fillColor: Colors.grey.shade50,
+                                  prefixIcon: Icon(Icons.currency_rupee_outlined, color: AppColors.tealColor),
+                                ),
+                                keyboardType: TextInputType.numberWithOptions(decimal: true),
+                                enabled: !isSaving,
+                                validator: (value) {
+                                  final price = double.tryParse(value ?? '');
+                                  if (price == null || price <= 0) return "Valid price required";
+                                  return null;
+                                },
+                              ),
+                            ),
+                            SizedBox(width: 12),
+                            Expanded(
+                              child: DropdownButtonFormField<String>(
+                                value: selectedUnit,
+                                decoration: InputDecoration(
+                                  labelText: "Unit",
+                                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                                  filled: true,
+                                  fillColor: Colors.grey.shade50,
+                                ),
+                                items: controller.unitOptions.map((unit) {
+                                  return DropdownMenuItem(value: unit, child: Text(unit));
+                                }).toList(),
+                                onChanged: isSaving ? null : (value) {
+                                  setState(() => selectedUnit = value!);
+                                },
+                              ),
+                            ),
+                          ],
+                        ),
+                        SizedBox(height: 12),
+
+                        // Stock Section
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              children: [
+                                Checkbox(
+                                  value: isUnlimitedStock,
+                                  onChanged: isSaving ? null : (value) {
+                                    setState(() {
+                                      isUnlimitedStock = value!;
+                                      if (isUnlimitedStock) stockCtrl.clear();
+                                    });
+                                  },
+                                ),
+                                Text("Unlimited Stock"),
+                              ],
+                            ),
+                            if (!isUnlimitedStock)
+                              TextFormField(
+                                controller: stockCtrl,
+                                decoration: InputDecoration(
+                                  labelText: "Current Stock *",
+                                  hintText: "Enter stock quantity",
+                                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                                  filled: true,
+                                  fillColor: Colors.grey.shade50,
+                                  prefixIcon: Icon(Icons.inventory_2_outlined, color: AppColors.tealColor),
+                                ),
+                                keyboardType: TextInputType.number,
+                                enabled: !isSaving,
+                                validator: (value) {
+                                  if (isUnlimitedStock) return null;
+                                  final stock = int.tryParse(value ?? '');
+                                  if (stock == null || stock < 0) return "Valid stock required";
+                                  return null;
+                                },
+                              ),
+                          ],
+                        ),
+                        SizedBox(height: 12),
+
+                        // Detail Requirements
+                        TextFormField(
+                          controller: detailCtrl,
+                          decoration: InputDecoration(
+                            labelText: "Detail Requirements",
+                            hintText: "Enter additional details (optional)",
+                            border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                            filled: true,
+                            fillColor: Colors.grey.shade50,
+                            prefixIcon: Icon(Icons.notes_outlined, color: AppColors.tealColor),
+                          ),
+                          maxLines: 3,
+                          enabled: !isSaving,
+                        ),
+                        SizedBox(height: 12),
+
+                        // Status Toggle
+                        Row(
+                          children: [
+                            Icon(Icons.toggle_on_outlined, color: AppColors.tealColor),
+                            SizedBox(width: 8),
+                            Text("Status:", style: TextStyle(fontWeight: FontWeight.w500)),
+                            Spacer(),
+                            Switch(
+                              value: isActive,
+                              onChanged: isSaving ? null : (value) {
+                                setState(() => isActive = value);
+                              },
+                              activeColor: AppColors.tealColor,
+                            ),
+                            Text(isActive ? "Active" : "Inactive"),
+                          ],
+                        ),
+                        SizedBox(height: 20),
+
+                        // Action Buttons
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.end,
+                          children: [
+                            TextButton(
+                              onPressed: isSaving ? null : () => Navigator.pop(context),
+                              child: Text(
+                                "Cancel",
+                                style: TextStyle(
+                                  color: Colors.grey.shade700,
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                            ),
+                            SizedBox(width: 8),
+                            ElevatedButton(
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: AppColors.tealColor,
+                                foregroundColor: AppColors.whiteColor,
+                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                                padding: EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                                elevation: 3,
+                              ),
+                              onPressed: isSaving ? null : () async {
+                                if (formKey.currentState!.validate()) {
+                                  setState(() => isSaving = true);
+
+                                  final name = nameCtrl.text.trim();
+                                  final price = double.parse(priceCtrl.text);
+                                  final stock = isUnlimitedStock ? -1 : int.parse(stockCtrl.text);
+                                  final detail = detailCtrl.text.trim();
+
+                                  try {
+                                    await controller.editItem(
+                                      itemId: item.itemId,
+                                      newName: name,
+                                      newPrice: price,
+                                      unitOfMeasurement: selectedUnit,
+                                      currentStock: stock,
+                                      detailRequirement: detail,
+                                      isActive: isActive,
+                                    );
+                                    Navigator.pop(context);
+                                  } catch (e) {
+                                    setState(() => isSaving = false);
+                                  }
+                                }
+                              },
+                              child: isSaving
+                                  ? SizedBox(
+                                width: 20,
+                                height: 20,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                  valueColor: AlwaysStoppedAnimation<Color>(AppColors.whiteColor),
+                                ),
+                              )
+                                  : Text(
+                                "Update Item",
+                                style: TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+
 
   void _showCartDialog(BuildContext context) {
     final nameCtrl = TextEditingController();
@@ -520,15 +2255,15 @@ class ItemScreen extends GetView<ItemController> {
 
                                 try {
                                   // Save to invoices table with userName
-                                
-final cartCopy = controller.cart.toList();
-final saved = await controller.saveInvoice(cartCopy, userName, phone);
-if (saved) {
-  await InvoiceHelper.generateAndShareInvoice(cartCopy, userName, phone);
-  // Now you can clear the cart if you want
-  controller.clearCart();
 
-}
+                                  final cartCopy = controller.cart.toList();
+                                  final saved = await controller.saveInvoice(cartCopy, userName, phone);
+                                  if (saved) {
+                                    await InvoiceHelper.generateAndShareInvoice(cartCopy, userName, phone);
+                                    // Now you can clear the cart if you want
+                                    controller.clearCart();
+
+                                  }
                                   Navigator.pop(context);
                                   showCustomSnackbar(
                                     title: "Success",
@@ -564,102 +2299,86 @@ if (saved) {
       },
     );
   }
+
+  /// ✅ Edit Item Dialog
+  // void _showEditItemDialog(BuildContext context, Item item) {
+  //   final nameCtrl = TextEditingController(text: item.itemName);
+  //   final priceCtrl = TextEditingController(text: item.price.toStringAsFixed(2));
+  //
+  //   showDialog(
+  //     context: context,
+  //     builder: (_) {
+  //       return AlertDialog(
+  //         title: const Text("Edit Item"),
+  //         content: Column(
+  //           mainAxisSize: MainAxisSize.min,
+  //           children: [
+  //             TextField(
+  //               controller: nameCtrl,
+  //               decoration: const InputDecoration(labelText: "Item Name"),
+  //             ),
+  //             TextField(
+  //               controller: priceCtrl,
+  //               keyboardType: TextInputType.number,
+  //               decoration: const InputDecoration(labelText: "Price"),
+  //             ),
+  //           ],
+  //         ),
+  //         actions: [
+  //           TextButton(
+  //             onPressed: () => Navigator.pop(context),
+  //             child: const Text("Cancel"),
+  //           ),
+  //           ElevatedButton(
+  //             onPressed: () async {
+  //               final newName = nameCtrl.text;
+  //               final newPrice = double.tryParse(priceCtrl.text) ?? item.price;
+  //
+  //               await controller.editItem(item.itemId, newName, newPrice);
+  //
+  //               // ✅ Safer way
+  //               if (Get.isDialogOpen ?? false) {
+  //                 Get.back(); // closes dialog safely
+  //               }
+  //             },
+  //             child: const Text("Save"),
+  //           ),
+  //         ],
+  //       );
+  //     },
+  //   );
+  // }
+
 }
 
-class AddToCartButton extends StatefulWidget {
-  final Item item;
-  final VoidCallback? onPressed;
+/// ✅ Delete Confirmation
+// void _confirmDelete(BuildContext context, Item item) {
+//   showDialog(
+//     context: context,
+//     builder: (_) => AlertDialog(
+//       title: const Text("Delete Item"),
+//       content: Text("Are you sure you want to delete '${item.itemName}'?"),
+//       actions: [
+//         TextButton(
+//           onPressed: () => Navigator.pop(context),
+//           child: const Text("Cancel"),
+//         ),
+//         ElevatedButton(
+//           style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+//           onPressed: () async {
+//             await controller.deleteItem(item.itemId);
+//             Navigator.pop(context);
+//             showCustomSnackbar(
+//               title: "Deleted",
+//               message: "${item.itemName} deleted successfully",
+//               baseColor: Colors.red.shade700,
+//               icon: Icons.delete_outline,
+//             );
+//           },
+//           child: const Text("Delete"),
+//         ),
+//       ],
+//     ),
+//   );
+// }
 
-  const AddToCartButton({
-    super.key,
-    required this.item,
-    this.onPressed,
-  });
-
-  @override
-  _AddToCartButtonState createState() => _AddToCartButtonState();
-}
-
-class _AddToCartButtonState extends State<AddToCartButton> with SingleTickerProviderStateMixin {
-  late AnimationController _controller;
-  late Animation<double> _scaleAnimation;
-  bool _isAdding = false;
-
-  @override
-  void initState() {
-    super.initState();
-    _controller = AnimationController(
-      vsync: this,
-      duration: Duration(milliseconds: 200),
-    );
-    _scaleAnimation = Tween<double>(begin: 1.0, end: 0.9).animate(
-      CurvedAnimation(parent: _controller, curve: Curves.easeInOut),
-    );
-  }
-
-  @override
-  void dispose() {
-    _controller.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final ItemController controller = Get.find();
-
-    return ScaleTransition(
-      scale: _scaleAnimation,
-      child: ElevatedButton(
-        style: ElevatedButton.styleFrom(
-          backgroundColor: AppColors.tealColor,
-          foregroundColor: AppColors.whiteColor,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-          padding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-          elevation: 3,
-          minimumSize: Size(100, 36),
-        ),
-        onPressed: _isAdding
-            ? null
-            : () async {
-          setState(() {
-            _isAdding = true;
-          });
-          _controller.forward().then((_) => _controller.reverse());
-          controller.addToCart(widget.item);
-          await Future.delayed(Duration(milliseconds: 300));
-          if (mounted) {
-            setState(() {
-              _isAdding = false;
-            });
-          }
-          if (widget.onPressed != null) {
-            widget.onPressed!();
-          }
-        },
-        child: _isAdding
-            ? SizedBox(
-          width: 20,
-          height: 20,
-          child: CircularProgressIndicator(
-            strokeWidth: 2,
-            valueColor: AlwaysStoppedAnimation<Color>(AppColors.whiteColor),
-          ),
-        )
-            : Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(Icons.add_shopping_cart, size: 18),
-            SizedBox(width: 6),
-            Text(
-              "Add",
-              style: TextStyle(
-                fontSize: 12,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
