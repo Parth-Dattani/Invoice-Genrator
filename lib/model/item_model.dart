@@ -7,6 +7,7 @@ class Item {
   final int currentStock;
   final String detailRequirement;
   final bool isActive;
+  final String userId;
 
   Item({
     required this.itemId,
@@ -17,6 +18,7 @@ class Item {
     this.currentStock = 0,
     this.detailRequirement = '',
     this.isActive = true,
+    this.userId = '0',
   });
 
   Map<String, dynamic> toMap() {
@@ -42,6 +44,7 @@ class Item {
       currentStock: int.tryParse(map['currentStock']?.toString() ?? '0') ?? 0,
       detailRequirement: map['detailRequirement']?.toString() ?? '',
       isActive: _parseIsActive(map['isActive']),
+      userId: map['userId']?.toString() ?? '',
     );
   }
 
@@ -148,6 +151,8 @@ class Invoice {
     );
   }
 }
+
+
 
 // class Invoice {
 //   final String pid;

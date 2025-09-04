@@ -6,3 +6,6 @@ export 'company_binding.dart';
 export 'dashboard_binding.dart';
 export 'customer_registration_binding.dart';
 export 'settings_binding.dart';
+export 'company_selection_binding.dart';
+export 'customer_list_binding.dart';
+export 'new_invoice_binding.dart';

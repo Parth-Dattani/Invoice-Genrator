@@ -1,5 +1,6 @@
 import 'dart:convert';
 
+import 'package:demo_prac_getx/constant/app_constant.dart';
 import 'package:demo_prac_getx/model/comment_model.dart';
 import 'package:demo_prac_getx/services/api.dart';
 import 'package:http/http.dart' as http;
@@ -265,10 +266,14 @@ import '../utils/pdf_helper.dart';
 
 ///new
 class RemoteService {
+
+  String userId = AppConstants.userId;
+
   static const String appId = "24b22f90-835f-4202-a038-3f1dd7057aa8";
   static const String accessKey = "V2-9NVog-SGuQ6-prAu2-HG5GE-Y6K1d-w40RW-XAlD5-EbLcB";
   static const String invoiceTableName = "Invoice";
   static const String itemsTableName = "Item";
+  ///static const String itemsTableName2 = "Item_";
   static const String apiKey = "cnp1X-AFICA-X25lf-NuAwm-jQfEr-Cj9nr-S9mqj-xOYni";
 
   static Future<http.Response> getComment() async {
@@ -283,15 +288,30 @@ class RemoteService {
   }
 
   /// Add item to Items table with enhanced fields
-  static Future<void> addItem(Item item) async {
+  static Future<void> addItem(String userId,Item item) async {
+    final dynamicTableName = "${itemsTableName}_$userId";
+    print("Dynamic Item Tabel name   :--------- ${dynamicTableName}");
     final url = Uri.parse(
-        "https://api.appsheet.com/api/v2/apps/$appId/tables/$itemsTableName/Action");
+        "https://api.appsheet.com/api/v2/apps/$appId/tables/$itemsTableName/Action"
+        ///"https://api.appsheet.com/api/v2/apps/$appId/tables/$dynamicTableName/Action"
+    );
+
+    print("Dynamic Item Tabel Api Url :--------- ${dynamicTableName}");
+
+    // Ensure userId is included in the item data
+    final itemData = {
+      ...item.toMap(),
+      "userId": userId, // Make sure this matches your column name exactly
+    };
 
     final body = jsonEncode({
       "Action": "Add",
-      "Rows": [item.toMap()],
+      "Rows": [
+        itemData
+       ],
     });
 
+    print("Adding item with data-01: $itemData");
     print("Adding item with data: ${item.toMap()}");
 
     final response = await http.post(
@@ -504,7 +524,7 @@ class RemoteService {
     }
   }
 
-  static Future<List<Item>> getItems() async {
+  static Future<List<Item>> getItems1() async {
     final url = Uri.parse(
         "https://api.appsheet.com/api/v2/apps/$appId/tables/$itemsTableName/Action");
 
@@ -512,6 +532,9 @@ class RemoteService {
       "Action": "Find",
       "Properties": {
         "Locale": "en-US",
+        "Selector": 'Filter([userId] = "${AppConstants.userId}")'
+        //"Selector": 'Filter(1=1)' , // Get just one specific item
+       // "Selector": "Filter([itemId] = '1756881063842')",
         // "Selector": 'Filter(1=1)', // Get all items
         // "SelectColumns": [
         //   "itemId",
@@ -544,6 +567,8 @@ class RemoteService {
 
       if (response.statusCode == 200) {
         // Check if response body is empty or just whitespace
+
+        print("------=-=:${response.body.trim().isEmpty}");
         if (response.body.trim().isEmpty) {
           print("Warning: Response body is empty, returning empty list");
           return <Item>[];
@@ -552,6 +577,7 @@ class RemoteService {
         dynamic data;
         try {
           data = jsonDecode(response.body);
+          print("dattta:------------${data}");
         } catch (jsonError) {
           print("JSON Decode Error: $jsonError");
           print("Raw response body: ${response.body.codeUnits}"); // Show as code units for debugging
@@ -567,22 +593,26 @@ class RemoteService {
             print("Processing item: $e");
             return Item.fromMap(e as Map<String, dynamic>);
           }).toList();
-        } else if (data is Map && data["Rows"] is List) {
+        }
+        else if (data is Map && data["Rows"] is List) {
           final rows = data["Rows"] as List;
           print("Processing data as map with Rows containing ${rows.length} items");
           return rows.map((e) {
             print("Processing row: $e");
             return Item.fromMap(e as Map<String, dynamic>);
           }).toList();
-        } else if (data is Map && data.isEmpty) {
+        }
+        else if (data is Map && data.isEmpty) {
           print("Received empty map, returning empty list");
           return <Item>[];
-        } else {
+        }
+        else {
           print("Unexpected data structure received");
           print("Data keys: ${data is Map ? data.keys.toList() : 'Not a map'}");
           throw Exception("Invalid response format. Expected List or Map with 'Rows', got: ${data.runtimeType}");
         }
-      } else {
+      }
+      else {
         print("HTTP Error: ${response.statusCode}");
         print("Error response: ${response.body}");
         throw Exception("HTTP ${response.statusCode}: ${response.body}");
@@ -590,6 +620,579 @@ class RemoteService {
     } catch (e) {
       print("Network or processing error: $e");
       rethrow;
+    }
+  }
+
+  // The issue is AppSheet sync - let's force a sync and try different approaches
+
+// Method 1: Force AppSheet to sync before filtering
+  static Future<List<Item>> getItems({String? userId}) async {
+    final url = Uri.parse(
+        "https://api.appsheet.com/api/v2/apps/$appId/tables/$itemsTableName/Action");
+
+    // First, let's try without any selector to see if we can get data
+    Map<String, dynamic> requestBody = {
+      "Action": "Find",
+      "Properties": {
+        "Locale": "en-US",
+      }
+    };
+
+    // Only add selector if we have a userId
+    if (userId != null && userId.isNotEmpty) {
+      // Try the exact format that should work
+      requestBody["Properties"]["Selector"] = 'Filter([userId] = "$userId")';
+    }
+
+    final body = jsonEncode(requestBody);
+    print("Request body: $body");
+
+    try {
+      final response = await http.post(
+        url,
+        headers: {
+          "Content-Type": "application/json",
+          "ApplicationAccessKey": accessKey,
+        },
+        body: body,
+      );
+
+      print("Response Status: ${response.statusCode}");
+      print("Response Body: '${response.body}'");
+      print("Response Body Length: ${response.body.length}");
+
+      if (response.statusCode == 200) {
+        if (response.body.trim().isEmpty || response.body.trim() == "[]") {
+          print("Empty response received");
+          return <Item>[];
+        }
+
+        dynamic data;
+        try {
+          data = jsonDecode(response.body);
+          print("Parsed data: $data");
+        } catch (jsonError) {
+          print("JSON decode error: $jsonError");
+          throw Exception("Failed to parse response: $jsonError");
+        }
+
+        List<dynamic> itemsData = [];
+
+        if (data is List) {
+          itemsData = data;
+          print("Direct list with ${itemsData.length} items");
+        } else if (data is Map) {
+          if (data.containsKey("Rows")) {
+            itemsData = data["Rows"];
+            print("Map with Rows: ${itemsData.length} items");
+          } else if (data.containsKey("Records")) {
+            itemsData = data["Records"];
+            print("Map with Records: ${itemsData.length} items");
+          } else {
+            print("Unknown map structure: ${data.keys}");
+          }
+        }
+
+        // If we have userId but no filtered results, get all and filter manually
+        if (userId != null && userId.isNotEmpty && itemsData.isEmpty) {
+          print("No filtered results, trying to get all data and filter manually...");
+          return await getAllAndFilterManually(userId);
+        }
+
+        return itemsData.map((e) => Item.fromMap(e as Map<String, dynamic>)).toList();
+
+      } else {
+        throw Exception("HTTP ${response.statusCode}: ${response.body}");
+      }
+    } catch (e) {
+      print("Error in getItems: $e");
+      rethrow;
+    }
+  }
+
+// Method 2: Get all data and filter manually (fallback)
+  static Future<List<Item>> getAllAndFilterManually(String userId) async {
+    print("=== MANUAL FILTERING FALLBACK ===");
+
+    final url = Uri.parse(
+        "https://api.appsheet.com/api/v2/apps/$appId/tables/$itemsTableName/Action");
+
+    final body = jsonEncode({
+      "Action": "Find",
+      "Properties": {
+        "Locale": "en-US",
+        // No selector - get all data
+      }
+    });
+
+    try {
+      final response = await http.post(
+        url,
+        headers: {
+          "Content-Type": "application/json",
+          "ApplicationAccessKey": accessKey,
+        },
+        body: body,
+      );
+
+      if (response.statusCode == 200 && response.body.trim().isNotEmpty) {
+        final data = jsonDecode(response.body);
+
+        List<dynamic> allItems = [];
+        if (data is List) {
+          allItems = data;
+        } else if (data is Map && data.containsKey("Rows")) {
+          allItems = data["Rows"];
+        }
+
+        print("Got ${allItems.length} total items, filtering for userId: $userId");
+
+        // Filter manually
+        final filteredItems = allItems.where((item) {
+          final map = item as Map<String, dynamic>;
+          final itemUserId = map['userId']?.toString() ?? '';
+          print("Checking item userId: '$itemUserId' vs target: '$userId'");
+          return itemUserId == userId;
+        }).toList();
+
+        print("Manual filter found ${filteredItems.length} matching items");
+
+        return filteredItems.map((e) => Item.fromMap(e as Map<String, dynamic>)).toList();
+      }
+
+      return <Item>[];
+    } catch (e) {
+      print("Error in manual filtering: $e");
+      return <Item>[];
+    }
+  }
+
+// Method 3: Try different AppSheet API approach
+  static Future<List<Item>> getItemsAlternative(String userId) async {
+    final url = Uri.parse(
+        "https://api.appsheet.com/api/v2/apps/$appId/tables/$itemsTableName/Action");
+
+    // Try different Action types
+    final actions = ["Find", "Read"];
+
+    for (String action in actions) {
+      print("=== TRYING ACTION: $action ===");
+
+      final body = jsonEncode({
+        "Action": action,
+        "Properties": {
+          "Locale": "en-US",
+          "Selector": 'Filter([userId] = "$userId")',
+        }
+      });
+
+      try {
+        final response = await http.post(
+          url,
+          headers: {
+            "Content-Type": "application/json",
+            "ApplicationAccessKey": accessKey,
+          },
+          body: body,
+        );
+
+        print("$action Response: ${response.statusCode} - ${response.body}");
+
+        if (response.statusCode == 200 &&
+            response.body.trim().isNotEmpty &&
+            response.body.trim() != "[]") {
+
+          final data = jsonDecode(response.body);
+
+          if (data is List && data.isNotEmpty) {
+            print("Success with $action! Found ${data.length} items");
+            return data.map((e) => Item.fromMap(e as Map<String, dynamic>)).toList();
+          }
+        }
+      } catch (e) {
+        print("Error with $action: $e");
+      }
+    }
+
+    print("All alternative methods failed, falling back to manual filter");
+    return await getAllAndFilterManually(userId);
+  }
+
+
+// Quick test method - try this first
+  Future<void> testSimpleFilter() async {
+    try {
+      print("=== TESTING SIMPLE APPROACH ===");
+
+      // Get all items first
+      final allItems = await RemoteService.getItems();
+      print("Total items without filter: ${allItems.length}");
+
+      // Now try with filter
+      final filteredItems = await RemoteService.getItems(userId: "Cueiq22u4QYqyzvjwHFbNVIxQXq2");
+      print("Filtered items: ${filteredItems.length}");
+
+      // Manual verification
+      final manualFilter = allItems.where((item) => item.userId == "Cueiq22u4QYqyzvjwHFbNVIxQXq2").toList();
+      print("Manual filter result: ${manualFilter.length}");
+
+    } catch (e) {
+      print("Test error: $e");
+    }
+  }
+  ///
+  ///
+  // Step 1: First, let's debug what userId you're getting
+  // static Future<List<Item>> getItems({String? userId}) async {
+  //   final url = Uri.parse(
+  //       "https://api.appsheet.com/api/v2/apps/$appId/tables/$itemsTableName/Action");
+  //
+  //   // DEBUG: Print the userId value
+  //   print("=== DEBUG INFO ===");
+  //   print("userId parameter: '$userId'");
+  //   print("userId is null: ${userId == null}");
+  //   print("userId is empty: ${userId?.isEmpty ?? true}");
+  //   print("userId length: ${userId?.length ?? 0}");
+  //
+  //   String selector;
+  //
+  //   // For debugging, first get all items to see the data structure
+  //   if (userId == null || userId.isEmpty) {
+  //     print("No userId provided, getting all items for debugging");
+  //     selector = "Filter(1=1)"; // Get all items
+  //   } else {
+  //     print("Building selector for userId: '$userId'");
+  //
+  //     // Try different column name variations (AppSheet column names might be different)
+  //     // Try these one by one:
+  //     selector = "Filter([userId] = '$userId')";           // Option 1: userId
+  //     // selector = "Filter([UserId] = '$userId')";        // Option 2: UserId (capital U)
+  //     // selector = "Filter([user_id] = '$userId')";       // Option 3: user_id
+  //     // selector = "Filter([UserID] = '$userId')";        // Option 4: UserID
+  //     // selector = "Filter([User ID] = '$userId')";       // Option 5: User ID (with space)
+  //   }
+  //
+  //   final body = jsonEncode({
+  //     "Action": "Find",
+  //     "Properties": {
+  //       "Locale": "en-US",
+  //       "Selector": selector,
+  //     }
+  //   });
+  //
+  //   print("Request selector: $selector");
+  //   print("Full request body: $body");
+  //
+  //   try {
+  //     final response = await http.post(
+  //       url,
+  //       headers: {
+  //         "Content-Type": "application/json",
+  //         "ApplicationAccessKey": accessKey,
+  //       },
+  //       body: body,
+  //     );
+  //
+  //     print("Response Status: ${response.statusCode}");
+  //     print("Response Body: ${response.body}");
+  //
+  //     if (response.statusCode == 200) {
+  //       if (response.body.trim().isEmpty) {
+  //         print("EMPTY RESPONSE - This means:");
+  //         print("1. The filter didn't match any records, OR");
+  //         print("2. The column name is wrong, OR");
+  //         print("3. The userId value doesn't exist in the data");
+  //         return <Item>[];
+  //       }
+  //
+  //       dynamic data;
+  //       try {
+  //         data = jsonDecode(response.body);
+  //         print("Parsed data successfully");
+  //
+  //         // DEBUG: Print first item to see column names
+  //         if (data is List && data.isNotEmpty) {
+  //           print("SAMPLE ITEM DATA:");
+  //           print("Keys in first item: ${(data[0] as Map).keys.toList()}");
+  //           print("First item: ${data[0]}");
+  //         } else if (data is Map && data.containsKey("Rows") && data["Rows"].isNotEmpty) {
+  //           print("SAMPLE ITEM DATA:");
+  //           print("Keys in first row: ${(data["Rows"][0] as Map).keys.toList()}");
+  //           print("First row: ${data["Rows"][0]}");
+  //         }
+  //
+  //       } catch (jsonError) {
+  //         print("JSON decode error: $jsonError");
+  //         throw Exception("Failed to parse response: $jsonError");
+  //       }
+  //
+  //       List<dynamic> itemsData = [];
+  //
+  //       if (data is List) {
+  //         itemsData = data;
+  //       } else if (data is Map) {
+  //         if (data.containsKey("Rows")) {
+  //           itemsData = data["Rows"];
+  //         } else if (data.containsKey("Records")) {
+  //           itemsData = data["Records"];
+  //         }
+  //       }
+  //
+  //       print("Found ${itemsData.length} items");
+  //       return itemsData.map((e) => Item.fromMap(e as Map<String, dynamic>)).toList();
+  //
+  //     } else {
+  //       print("HTTP Error: ${response.statusCode}");
+  //       print("Error Body: ${response.body}");
+  //       throw Exception("HTTP ${response.statusCode}: ${response.body}");
+  //     }
+  //   } catch (e) {
+  //     print("Request failed: $e");
+  //     rethrow;
+  //   }
+  // }
+
+
+// Step 3: Make sure your getCurrentUserId() method is working
+  String? getCurrentUserId() {
+    // DEBUG: Print what you're returning
+    String? userId = "your_actual_user_id"; // Replace with your actual method
+
+    print("getCurrentUserId() returning: '$userId'");
+    return userId;
+  }
+
+
+// Step 5: Test different column names
+  static Future<void> testDifferentColumnNames(String userId) async {
+    final columnVariations = [
+      "userId",
+      "UserId",
+      "user_id",
+      "UserID",
+      "User ID",
+      "user",
+      "User"
+    ];
+
+    for (String columnName in columnVariations) {
+      try {
+        print("Testing column name: '$columnName'");
+
+        final selector = "Filter([$columnName] = '$userId')";
+        print("Selector: $selector");
+
+        final body = jsonEncode({
+          "Action": "Find",
+          "Properties": {
+            "Locale": "en-US",
+            "Selector": selector,
+          }
+        });
+
+        final response = await http.post(
+          Uri.parse("https://api.appsheet.com/api/v2/apps/$appId/tables/$itemsTableName/Action"),
+          headers: {
+            "Content-Type": "application/json",
+            "ApplicationAccessKey": accessKey,
+          },
+          body: body,
+        );
+
+        if (response.statusCode == 200 && response.body.trim().isNotEmpty) {
+          final data = jsonDecode(response.body);
+          final count = data is List ? data.length : (data["Rows"]?.length ?? 0);
+
+          if (count > 0) {
+            print("SUCCESS with column '$columnName': Found $count items");
+            return; // Stop testing when we find the right column
+          }
+        }
+
+      } catch (e) {
+        print("Error testing column '$columnName': $e");
+      }
+    }
+
+    print("No working column name found for userId");
+  }
+  ///
+
+  ////
+
+
+  // Optional: Add method to get user-specific items
+  static Future<List<Item>> getUserItems(String userId) async {
+    print("=== DEBUG getUserItems ===");
+    print("UserId: $userId");
+    print("AppId: $appId");
+    print("Table Name: $itemsTableName");
+    print("Access Key: ${accessKey.substring(0, 10)}...");
+
+    final url = Uri.parse(
+        "https://api.appsheet.com/api/v2/apps/$appId/tables/$itemsTableName/Action"
+    );
+
+    print("API URL: $url");
+
+    // Try different approaches based on your AppSheet setup
+    final body = jsonEncode({
+      "Action": "Find",
+      "Properties": {
+    "Locale": "en-US"
+        // Option 1: If using security filters
+        //"Selector": "SELECT($itemsTableName[userId], [userId] = '$userId')",
+
+        // Option 2: Alternative selector (uncomment if option 1 doesn't work)
+         //"Selector": "Filter($itemsTableName, [userId] = '$userId')",
+
+        // Option 3: If you want all columns (uncomment if needed)
+        // "Selector": "SELECT($itemsTableName[*], [userId] = '$userId')",
+      },
+    });
+
+    print("Request Body: $body");
+
+    try {
+      final response = await http.post(
+        url,
+        headers: {
+          "Content-Type": "application/json",
+          "ApplicationAccessKey": accessKey,
+        },
+        body: body,
+      );
+
+      print("Response Status Code: ${response.statusCode}");
+      print("Response Headers: ${response.headers}");
+      print("Response Body: ${response.body}");
+
+      if (response.statusCode == 200) {
+        final responseData = jsonDecode(response.body);
+        print("Parsed Response Data: $responseData");
+
+        // Check different possible response structures
+        List<dynamic> rows = [];
+
+        if (responseData is List) {
+          rows = responseData;
+        } else if (responseData is Map) {
+          rows = responseData['Rows'] ??
+              responseData['rows'] ??
+              responseData['data'] ??
+              responseData['result'] ?? [];
+        }
+
+        print("Extracted Rows: $rows");
+        print("Number of rows: ${rows.length}");
+
+        if (rows.isEmpty) {
+          print("WARNING: No rows found for userId: $userId");
+
+          // Let's also try to get ALL items to see what's in the table
+          await debugGetAllItems();
+        }
+
+        List<Item> items = [];
+        for (var row in rows) {
+          try {
+            print("Processing row: $row");
+            Item item = Item.fromMap(row);
+            items.add(item);
+          } catch (e) {
+            print("Error parsing row $row: $e");
+          }
+        }
+
+        print("Successfully parsed ${items.length} items");
+        return items;
+      } else {
+        print("ERROR: HTTP ${response.statusCode}");
+        print("Error Body: ${response.body}");
+        throw Exception("Failed to fetch items: ${response.statusCode} - ${response.body}");
+      }
+    } catch (e) {
+      print("EXCEPTION in getUserItems: $e");
+      rethrow;
+    }
+  }
+
+// Debug method to get all items (for testing)
+  static Future<void> debugGetAllItems() async {
+    print("=== DEBUG: Fetching ALL items ===");
+
+    final url = Uri.parse(
+        "https://api.appsheet.com/api/v2/apps/$appId/tables/$itemsTableName/Action"
+    );
+
+    final body = jsonEncode({
+      "Action": "Find",
+      "Properties": {
+        "Selector": "SELECT($itemsTableName[*])",
+      },
+    });
+
+    try {
+      final response = await http.post(
+        url,
+        headers: {
+          "Content-Type": "application/json",
+          "ApplicationAccessKey": accessKey,
+        },
+        body: body,
+      );
+
+      if (response.statusCode == 200) {
+        final responseData = jsonDecode(response.body);
+        print("ALL ITEMS in table: $responseData");
+      } else {
+        print("Failed to fetch all items: ${response.statusCode} - ${response.body}");
+      }
+    } catch (e) {
+      print("Error fetching all items: $e");
+    }
+  }
+
+// Alternative approach using different API pattern
+  static Future<List<Item>> getUserItemsAlternative(String userId) async {
+    final url = Uri.parse(
+        "https://api.appsheet.com/api/v2/apps/$appId/tables/$itemsTableName/Action"
+    );
+
+    // Try the Read action instead of Find
+    final body = jsonEncode({
+      "Action": "Read",
+      "Properties": {
+        "Locale": "en-US",
+        "Timezone": "Pacific Standard Time"
+      },
+    });
+
+    try {
+      final response = await http.post(
+        url,
+        headers: {
+          "Content-Type": "application/json",
+          "ApplicationAccessKey": accessKey,
+        },
+        body: body,
+      );
+
+      if (response.statusCode == 200) {
+        final responseData = jsonDecode(response.body);
+        print("Read All Response: $responseData");
+
+        // Filter on client side
+        List<dynamic> rows = responseData is List ? responseData : (responseData['Rows'] ?? []);
+        List<dynamic> filteredRows = rows.where((row) => row['userId'] == userId).toList();
+
+        return filteredRows.map((row) => Item.fromMap(row)).toList();
+      } else {
+        throw Exception("Failed to fetch items: ${response.statusCode}");
+      }
+    } catch (e) {
+      print("Error in alternative method: $e");
+      return [];
     }
   }
 

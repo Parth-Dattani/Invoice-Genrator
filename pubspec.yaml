@@ -42,6 +42,10 @@ dependencies:
   url_launcher:
   flutter_pdfview:
   printing: ^5.14.2
+  firebase_core:
+  firebase_auth:
+  supabase_flutter: ^2.10.0
+  cloud_firestore:
 
 
 dev_dependencies:

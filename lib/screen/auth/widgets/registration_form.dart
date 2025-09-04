@@ -42,6 +42,17 @@ class RegistrationForm extends GetView<AuthController> {
                 ),
                 const SizedBox(height: 16),
                 TextFormField(
+                  controller: controller.loginPasswordController,
+                  obscureText: true,
+                  decoration: InputDecoration(
+                    labelText: "Password *",
+                    prefixIcon: const Icon(Icons.lock),
+                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                  ),
+                ),
+
+                const SizedBox(height: 16),
+                TextFormField(
                   controller: controller.regMobile1Controller,
                   keyboardType: TextInputType.phone,
                   decoration: InputDecoration(

@@ -7,3 +7,6 @@ export 'company_controller.dart';
 export 'dashboard_controller.dart';
 export 'customer_registration_controller.dart';
 export 'setting_controller.dart';
+export 'company_selection_controller.dart';
+export 'customer_list_controller.dart';
+export 'new_invoice_controller.dart';

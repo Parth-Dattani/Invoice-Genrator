@@ -51,4 +51,22 @@ List<GetPage> appPages = [
       page: () => SettingsScreen(),
       binding: SettingsBinding()
   ),
+
+  GetPage(
+      name: CompanySelectionScreen.pageId,
+      page: () => CompanySelectionScreen(),
+      binding: CompanySelectionBinding()
+  ),
+
+  GetPage(
+      name: CustomerListScreen.pageId,
+      page: () => CompanySelectionScreen(),
+      binding: CompanySelectionBinding()
+  ),
+
+  GetPage(
+      name: NewInvoiceScreen.pageId,
+      page: () => NewInvoiceScreen(),
+      binding: NewInvoiceBinding()
+  ),
 ];

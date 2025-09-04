@@ -1,10 +1,13 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:demo_prac_getx/constant/app_colors.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../controller/item_controller.dart';
 import '../controller/item_controller_old.dart';
 import '../model/model.dart';
 import '../utils/pdf_helper.dart';
+import '../utils/shared_preferences_helper.dart';
 import '../widgets/widgets.dart';
 
 // class ItemScreen extends GetView<ItemController> {
@@ -1357,6 +1360,15 @@ class ItemScreen extends GetView<ItemController> {
               ),
             ],
           ),
+          SizedBox(height: 8),
+          Row(
+            children: [
+              Expanded(
+                child: _buildDetailRow("ID", "₹${item.userId.toString()}"),
+              ),
+
+            ],
+          ),
           if (item.detailRequirement.isNotEmpty) ...[
             SizedBox(height: 8),
             _buildDetailRow("Details", item.detailRequirement),
@@ -1996,6 +2008,7 @@ class ItemScreen extends GetView<ItemController> {
   }
 
 
+  ///working 02-09-2.41
   void _showCartDialog(BuildContext context) {
     final nameCtrl = TextEditingController();
     final phoneCtrl = TextEditingController();
@@ -2299,6 +2312,511 @@ class ItemScreen extends GetView<ItemController> {
       },
     );
   }
+
+  ///with Cdtomer List
+  // void _showCartDialog(BuildContext context) {
+  //   final nameCtrl = TextEditingController();
+  //   final phoneCtrl = TextEditingController();
+  //   final formKey = GlobalKey<FormState>();
+  //   bool isFormValid = false;
+  //
+  //   // Customer selection variables
+  //   Map<String, dynamic>? selectedCustomer;
+  //   bool showCustomerForm = false;
+  //   List<Map<String, dynamic>> customers = [];
+  //   bool isLoadingCustomers = true;
+  //   String debugMessage = "Initializing...";
+  //
+  //   // Enhanced load customers with better debugging
+  //   Future<void> loadCustomers() async {
+  //     try {
+  //       debugMessage = "Getting Firebase Auth user...";
+  //       print("🔄 Loading customers...");
+  //
+  //       final user = FirebaseAuth.instance.currentUser;
+  //       if (user == null) {
+  //         debugMessage = "No authenticated user found";
+  //         print("❌ No authenticated user");
+  //         return;
+  //       }
+  //
+  //       debugMessage = "Getting company ID...";
+  //       print("✅ User authenticated: ${user.uid}");
+  //
+  //       // Try different ways to get company ID
+  //       String companyId = "";
+  //       try {
+  //         companyId = await sharedPreferencesHelper.getPrefData("CompanyId") ?? "";
+  //       } catch (e) {
+  //         print("❌ SharedPreferencesHelper error: $e");
+  //         // Try alternative method if you have it
+  //         // companyId = Get.find<YourAuthController>().companyId ?? "";
+  //       }
+  //
+  //       debugMessage = "Company ID: $companyId";
+  //       print("🏢 Company ID: '$companyId'");
+  //
+  //       if (companyId.isEmpty) {
+  //         debugMessage = "Company ID is empty - please register a company first";
+  //         print("❌ Company ID is empty");
+  //         Get.snackbar(
+  //           'Company Required',
+  //           'Please register a company first',
+  //           snackPosition: SnackPosition.BOTTOM,
+  //           backgroundColor: Colors.orange,
+  //           colorText: Colors.white,
+  //         );
+  //         return;
+  //       }
+  //
+  //       debugMessage = "Fetching customers from Firestore...";
+  //       print("📡 Fetching from path: users/${user.uid}/companies/$companyId/customers");
+  //
+  //       // Build the Firestore query step by step for debugging
+  //       final firestore = FirebaseFirestore.instance;
+  //       final userDoc = firestore.collection("users").doc(user.uid);
+  //       final companyDoc = userDoc.collection("companies").doc(companyId);
+  //       final customersCollection = companyDoc.collection("customers");
+  //
+  //       // Check if company document exists
+  //       final companyDocSnapshot = await companyDoc.get();
+  //       if (!companyDocSnapshot.exists) {
+  //         debugMessage = "Company document does not exist";
+  //         print("❌ Company document does not exist");
+  //         return;
+  //       }
+  //
+  //       print("✅ Company document exists");
+  //
+  //       // Get customers with error handling
+  //       final customersSnapshot = await customersCollection
+  //           .orderBy('createdAt', descending: true)
+  //           .get()
+  //           .catchError((error) {
+  //         print("❌ Firestore query error: $error");
+  //         debugMessage = "Firestore query error: $error";
+  //         throw error;
+  //       });
+  //
+  //       debugMessage = "Processing ${customersSnapshot.docs.length} customers...";
+  //       print("📋 Found ${customersSnapshot.docs.length} customer documents");
+  //
+  //       customers.clear();
+  //       for (var doc in customersSnapshot.docs) {
+  //         try {
+  //           final customerData = doc.data() as Map<String, dynamic>;
+  //           customerData['id'] = doc.id;
+  //           customers.add(customerData);
+  //           print("✅ Added customer: ${customerData['name']} - ${customerData['phone']}");
+  //         } catch (e) {
+  //           print("❌ Error processing customer doc ${doc.id}: $e");
+  //         }
+  //       }
+  //
+  //       debugMessage = "Successfully loaded ${customers.length} customers";
+  //       print("🎉 Successfully loaded ${customers.length} customers");
+  //
+  //     } catch (e) {
+  //       debugMessage = "Error: $e";
+  //       print("💥 Error loading customers: $e");
+  //       print("Stack trace: ${StackTrace.current}");
+  //
+  //       Get.snackbar(
+  //         'Error',
+  //         'Failed to load customers: $e',
+  //         snackPosition: SnackPosition.BOTTOM,
+  //         backgroundColor: Colors.red,
+  //         colorText: Colors.white,
+  //       );
+  //     } finally {
+  //       isLoadingCustomers = false;
+  //     }
+  //   }
+  //
+  //   showDialog(
+  //     context: context,
+  //     barrierDismissible: false,
+  //     builder: (_) {
+  //       return StatefulBuilder(
+  //         builder: (context, setState) {
+  //           // Load customers on first build
+  //           if (isLoadingCustomers && customers.isEmpty) {
+  //             loadCustomers().then((_) {
+  //               if (context.mounted) {
+  //                 setState(() {
+  //                   // Force rebuild after loading
+  //                 });
+  //               }
+  //             });
+  //           }
+  //
+  //           void validateForm() {
+  //             bool isValid = false;
+  //             if (selectedCustomer != null) {
+  //               isValid = true; // Customer is selected from dropdown
+  //             } else if (showCustomerForm) {
+  //               isValid = formKey.currentState?.validate() ?? false;
+  //             }
+  //
+  //             if (isValid != isFormValid) {
+  //               setState(() {
+  //                 isFormValid = isValid;
+  //               });
+  //             }
+  //           }
+  //
+  //           void onCustomerSelected(Map<String, dynamic>? customer) {
+  //             setState(() {
+  //               selectedCustomer = customer;
+  //               if (customer != null) {
+  //                 nameCtrl.text = customer['name'] ?? '';
+  //                 phoneCtrl.text = customer['phone'] ?? '';
+  //                 showCustomerForm = false;
+  //               } else {
+  //                 nameCtrl.clear();
+  //                 phoneCtrl.clear();
+  //                 showCustomerForm = true;
+  //               }
+  //             });
+  //             validateForm();
+  //           }
+  //
+  //           return Dialog(
+  //             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+  //             elevation: 8,
+  //             insetPadding: EdgeInsets.all(16),
+  //             child: Container(
+  //               constraints: BoxConstraints(
+  //                 maxHeight: MediaQuery.of(context).size.height * 0.9,
+  //                 maxWidth: 400,
+  //               ),
+  //               decoration: BoxDecoration(
+  //                 color: Colors.white,
+  //                 borderRadius: BorderRadius.circular(16),
+  //                 boxShadow: [
+  //                   BoxShadow(
+  //                     color: Colors.black.withOpacity(0.1),
+  //                     blurRadius: 10,
+  //                     offset: Offset(0, 4),
+  //                   ),
+  //                 ],
+  //               ),
+  //               child: Column(
+  //                 mainAxisSize: MainAxisSize.min,
+  //                 children: [
+  //                   // Header
+  //                   Container(
+  //                     padding: EdgeInsets.all(16),
+  //                     decoration: BoxDecoration(
+  //                       color: AppColors.tealColor.withOpacity(0.1),
+  //                       borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+  //                     ),
+  //                     child: Row(
+  //                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
+  //                       children: [
+  //                         Text(
+  //                           "Your Cart",
+  //                           style: TextStyle(
+  //                             fontSize: 20,
+  //                             fontWeight: FontWeight.bold,
+  //                             color: AppColors.tealColor,
+  //                           ),
+  //                         ),
+  //                         IconButton(
+  //                           icon: Icon(Icons.close, color: AppColors.tealColor),
+  //                           onPressed: () => Navigator.pop(context),
+  //                         ),
+  //                       ],
+  //                     ),
+  //                   ),
+  //
+  //                   // Cart Items (simplified for debugging)
+  //                   Expanded(
+  //                     child: Obx(() {
+  //                       if (controller.cart.isEmpty) {
+  //                         return Center(
+  //                           child: Column(
+  //                             mainAxisSize: MainAxisSize.min,
+  //                             children: [
+  //                               Icon(Icons.shopping_cart_outlined, size: 64, color: Colors.grey.shade400),
+  //                               SizedBox(height: 8),
+  //                               Text(
+  //                                 "Your cart is empty",
+  //                                 style: TextStyle(fontSize: 16, color: Colors.grey.shade600),
+  //                               ),
+  //                             ],
+  //                           ),
+  //                         );
+  //                       }
+  //                       return ListView.builder(
+  //                         shrinkWrap: true,
+  //                         padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+  //                         itemCount: controller.cart.length,
+  //                         itemBuilder: (context, index) {
+  //                           final item = controller.cart[index];
+  //                           return Card(
+  //                             margin: EdgeInsets.symmetric(vertical: 4),
+  //                             elevation: 2,
+  //                             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+  //                             child: ListTile(
+  //                               title: Text(item.itemName),
+  //                               subtitle: Text("₹${item.price.toStringAsFixed(2)} x ${item.qty}"),
+  //                               trailing: Text("₹${(item.price * item.qty).toStringAsFixed(2)}"),
+  //                             ),
+  //                           );
+  //                         },
+  //                       );
+  //                     }),
+  //                   ),
+  //
+  //                   Divider(height: 1, thickness: 1),
+  //
+  //                   // Customer Selection Section with Debug Info
+  //                   Padding(
+  //                     padding: EdgeInsets.all(16),
+  //                     child: Column(
+  //                       crossAxisAlignment: CrossAxisAlignment.start,
+  //                       children: [
+  //                         Text(
+  //                           "Customer Details",
+  //                           style: TextStyle(
+  //                             fontSize: 16,
+  //                             fontWeight: FontWeight.bold,
+  //                             color: AppColors.tealColor,
+  //                           ),
+  //                         ),
+  //                         SizedBox(height: 8),
+  //
+  //                         // Debug Information
+  //                         Container(
+  //                           padding: EdgeInsets.all(8),
+  //                           decoration: BoxDecoration(
+  //                             color: Colors.grey.shade100,
+  //                             borderRadius: BorderRadius.circular(8),
+  //                           ),
+  //                           child: Column(
+  //                             crossAxisAlignment: CrossAxisAlignment.start,
+  //                             children: [
+  //                               Text(
+  //                                 "Debug Info:",
+  //                                 style: TextStyle(
+  //                                   fontSize: 12,
+  //                                   fontWeight: FontWeight.bold,
+  //                                   color: Colors.blue,
+  //                                 ),
+  //                               ),
+  //                               Text(
+  //                                 debugMessage,
+  //                                 style: TextStyle(fontSize: 10, color: Colors.grey.shade700),
+  //                               ),
+  //                               Text(
+  //                                 "Customers loaded: ${customers.length}",
+  //                                 style: TextStyle(fontSize: 10, color: Colors.grey.shade700),
+  //                               ),
+  //                               Text(
+  //                                 "Loading: $isLoadingCustomers",
+  //                                 style: TextStyle(fontSize: 10, color: Colors.grey.shade700),
+  //                               ),
+  //                             ],
+  //                           ),
+  //                         ),
+  //                         SizedBox(height: 12),
+  //
+  //                         // Customer Dropdown with enhanced error handling
+  //                         if (isLoadingCustomers)
+  //                           Container(
+  //                             padding: EdgeInsets.all(16),
+  //                             decoration: BoxDecoration(
+  //                               border: Border.all(color: Colors.grey.shade300),
+  //                               borderRadius: BorderRadius.circular(12),
+  //                             ),
+  //                             child: Row(
+  //                               children: [
+  //                                 SizedBox(
+  //                                   width: 20,
+  //                                   height: 20,
+  //                                   child: CircularProgressIndicator(strokeWidth: 2),
+  //                                 ),
+  //                                 SizedBox(width: 12),
+  //                                 Expanded(
+  //                                   child: Column(
+  //                                     crossAxisAlignment: CrossAxisAlignment.start,
+  //                                     children: [
+  //                                       Text("Loading customers..."),
+  //                                       Text(
+  //                                         debugMessage,
+  //                                         style: TextStyle(fontSize: 10, color: Colors.grey),
+  //                                       ),
+  //                                     ],
+  //                                   ),
+  //                                 ),
+  //                               ],
+  //                             ),
+  //                           )
+  //                         else
+  //                           Container(
+  //                             decoration: BoxDecoration(
+  //                               border: Border.all(color: Colors.grey.shade300),
+  //                               borderRadius: BorderRadius.circular(12),
+  //                               color: Colors.grey.shade50,
+  //                             ),
+  //                             child: DropdownButtonFormField<Map<String, dynamic>?>(
+  //                               value: selectedCustomer,
+  //                               decoration: InputDecoration(
+  //                                 labelText: "Select Customer (${customers.length} available)",
+  //                                 border: InputBorder.none,
+  //                                 contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+  //                                 prefixIcon: Icon(Icons.people_outline, color: AppColors.tealColor),
+  //                               ),
+  //                               items: [
+  //                                 DropdownMenuItem<Map<String, dynamic>?>(
+  //                                   value: null,
+  //                                   child: Text(
+  //                                     "Add New Customer",
+  //                                     style: TextStyle(
+  //                                       color: AppColors.tealColor,
+  //                                       fontWeight: FontWeight.w500,
+  //                                     ),
+  //                                   ),
+  //                                 ),
+  //                                 ...customers.map((customer) {
+  //                                   return DropdownMenuItem<Map<String, dynamic>?>(
+  //                                     value: customer,
+  //                                     child: Column(
+  //                                       crossAxisAlignment: CrossAxisAlignment.start,
+  //                                       mainAxisSize: MainAxisSize.min,
+  //                                       children: [
+  //                                         Text(
+  //                                           customer['name'] ?? 'Unknown',
+  //                                           style: TextStyle(fontWeight: FontWeight.w500),
+  //                                         ),
+  //                                         Text(
+  //                                           customer['phone'] ?? '',
+  //                                           style: TextStyle(
+  //                                             fontSize: 12,
+  //                                             color: Colors.grey.shade600,
+  //                                           ),
+  //                                         ),
+  //                                       ],
+  //                                     ),
+  //                                   );
+  //                                 }).toList(),
+  //                               ],
+  //                               onChanged: onCustomerSelected,
+  //                             ),
+  //                           ),
+  //
+  //                         SizedBox(height: 12),
+  //
+  //                         // Manual Entry Form
+  //                         if (showCustomerForm || selectedCustomer == null)
+  //                           Form(
+  //                             key: formKey,
+  //                             child: Column(
+  //                               children: [
+  //                                 TextFormField(
+  //                                   controller: nameCtrl,
+  //                                   decoration: InputDecoration(
+  //                                     labelText: "Customer Name *",
+  //                                     border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+  //                                     prefixIcon: Icon(Icons.person_outline, color: AppColors.tealColor),
+  //                                   ),
+  //                                   validator: (value) => value?.trim().isEmpty ?? true ? "Enter customer name" : null,
+  //                                   onChanged: (value) => validateForm(),
+  //                                 ),
+  //                                 SizedBox(height: 12),
+  //                                 TextFormField(
+  //                                   controller: phoneCtrl,
+  //                                   decoration: InputDecoration(
+  //                                     labelText: "Phone Number *",
+  //                                     border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+  //                                     prefixIcon: Icon(Icons.phone_outlined, color: AppColors.tealColor),
+  //                                   ),
+  //                                   keyboardType: TextInputType.phone,
+  //                                   validator: (value) {
+  //                                     if (value?.trim().isEmpty ?? true) return "Enter phone number";
+  //                                     if (!RegExp(r'^\d{10}$').hasMatch(value!.trim())) return "Enter valid 10-digit number";
+  //                                     return null;
+  //                                   },
+  //                                   onChanged: (value) => validateForm(),
+  //                                 ),
+  //                               ],
+  //                             ),
+  //                           ),
+  //
+  //                         // Selected Customer Display
+  //                         if (selectedCustomer != null)
+  //                           Container(
+  //                             padding: EdgeInsets.all(12),
+  //                             decoration: BoxDecoration(
+  //                               color: AppColors.tealColor.withOpacity(0.1),
+  //                               borderRadius: BorderRadius.circular(12),
+  //                             ),
+  //                             child: Row(
+  //                               children: [
+  //                                 Icon(Icons.person, color: AppColors.tealColor),
+  //                                 SizedBox(width: 12),
+  //                                 Expanded(
+  //                                   child: Column(
+  //                                     crossAxisAlignment: CrossAxisAlignment.start,
+  //                                     children: [
+  //                                       Text(
+  //                                         selectedCustomer!['name'] ?? 'Unknown',
+  //                                         style: TextStyle(fontWeight: FontWeight.w600),
+  //                                       ),
+  //                                       Text(
+  //                                         selectedCustomer!['phone'] ?? '',
+  //                                         style: TextStyle(color: Colors.grey.shade600),
+  //                                       ),
+  //                                     ],
+  //                                   ),
+  //                                 ),
+  //                                 TextButton(
+  //                                   onPressed: () => onCustomerSelected(null),
+  //                                   child: Text("Change"),
+  //                                 ),
+  //                               ],
+  //                             ),
+  //                           ),
+  //                       ],
+  //                     ),
+  //                   ),
+  //
+  //                   // Footer - simplified for debugging
+  //                   Container(
+  //                     padding: EdgeInsets.all(16),
+  //                     decoration: BoxDecoration(
+  //                       color: AppColors.tealColor.withOpacity(0.1),
+  //                       borderRadius: BorderRadius.vertical(bottom: Radius.circular(16)),
+  //                     ),
+  //                     child: ElevatedButton(
+  //                       style: ElevatedButton.styleFrom(
+  //                         backgroundColor: AppColors.tealColor,
+  //                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+  //                         minimumSize: Size(double.infinity, 50),
+  //                       ),
+  //                       onPressed: isFormValid ? () {
+  //                         print("Generate Invoice clicked");
+  //                         print("Selected customer: $selectedCustomer");
+  //                         print("Name: ${nameCtrl.text}");
+  //                         print("Phone: ${phoneCtrl.text}");
+  //                         Navigator.pop(context);
+  //                       } : null,
+  //                       child: Text(
+  //                         "Generate Invoice",
+  //                         style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600),
+  //                       ),
+  //                     ),
+  //                   ),
+  //                 ],
+  //               ),
+  //             ),
+  //           );
+  //         },
+  //       );
+  //     },
+  //   );
+  // }
 
   /// ✅ Edit Item Dialog
   // void _showEditItemDialog(BuildContext context, Item item) {

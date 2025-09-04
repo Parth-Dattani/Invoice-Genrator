@@ -1,9 +1,13 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:demo_prac_getx/constant/app_constant.dart';
 import 'package:demo_prac_getx/model/model.dart';
 import 'package:demo_prac_getx/services/remote_service.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
 import '../constant/app_colors.dart';
+import '../utils/utils.dart';
 import '../widgets/widgets.dart';
 
 
@@ -246,6 +250,9 @@ class ItemController extends GetxController {
   var currentInvoiceId = "".obs;
   var showInactiveItems = false.obs;
 
+  var customers = <Map<String, dynamic>>[].obs;
+  var isLoadingCustomers = false.obs;
+
   // Unit options for dropdown
   final List<String> unitOptions = [
     'pcs', 'kg', 'gm', 'ltr', 'ml', 'mtr', 'cm', 'ft', 'inch', 'box', 'pack', 'dozen'
@@ -261,22 +268,36 @@ class ItemController extends GetxController {
   @override
   void onInit() {
     super.onInit();
-    fetchItems();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      print("object----${"\u20B9"}");
-      RemoteService.checkInvoiceTableStructure();
-    });
+    fetchItems2();
+
+    ///fetchItems();
+    // loadCustomers();
+    //
+    // WidgetsBinding.instance.addPostFrameCallback((_) {
+    //   print("object----${"\u20B9"}");
+    //   RemoteService.checkInvoiceTableStructure();
+    // });
   }
 
-  Future<void> fetchItems() async {
+  Future<void> fetchItems2i() async {
     try {
       isLoading.value = true;
       final items = await RemoteService.getItems();
       print("Fetched items: ${items.length}");
+
+      /// Debug each item
+      for (var item in items) {
+        print("Item: ${item.itemName}, ID: ${item.itemId}, Price: ${item.price}");
+      }
+
+
       itemList.assignAll(items);
       print("itemLListLengt------:${items.length}");
     } catch (e) {
       print("-----Error on fetchItems() in Controller,,,, ${e.toString()}");
+
+      print("Stack trace: ${e is Error ? (e as Error).stackTrace : ''}");
+
       showCustomSnackbar(
         title: "Error",
         message: "Failed to load items: $e",
@@ -285,6 +306,141 @@ class ItemController extends GetxController {
       );
     } finally {
       isLoading.value = false;
+    }
+  }
+
+
+// Updated controller method
+  Future<void> fetchItems2() async {
+    try {
+      isLoading.value = true;
+
+      final userId = "${AppConstants.userId}"; // Your target user ID
+
+      print("=== ATTEMPTING TO FETCH ITEMS FOR USER: $userId ===");
+
+      // Try Method 1: Standard approach
+      List<Item> items = await RemoteService.getItems(userId: userId);
+
+      // If no items found, try alternative methods
+      if (items.isEmpty) {
+        print("Standard method failed, trying alternative...");
+        items = await RemoteService.getItemsAlternative(userId);
+      }
+
+      print("Final result: ${items.length} items found");
+
+      // Debug: Print each found item
+      for (var item in items) {
+        print("Found item: ${item.itemName} (ID: ${item.itemId}) for user: ${item.userId}");
+      }
+
+      itemList.assignAll(items);
+
+      if (items.isEmpty) {
+        showCustomSnackbar(
+          title: "No Items",
+          message: "No items found for the current user",
+          baseColor: Colors.orange.shade700,
+          icon: Icons.info_outline,
+        );
+      } else {
+        showCustomSnackbar(
+          title: "Success",
+          message: "Found ${items.length} items",
+          baseColor: Colors.green.shade700,
+          icon: Icons.check_circle_outline,
+        );
+      }
+
+    } catch (e) {
+      print("Error in fetchItems2(): $e");
+
+      showCustomSnackbar(
+        title: "Error",
+        message: "Failed to load items: $e",
+        baseColor: Colors.red.shade700,
+        icon: Icons.error_outline,
+      );
+    } finally {
+      isLoading.value = false;
+    }
+  }
+
+
+// Step 3: Make sure your getCurrentUserId() method is working
+  String? getCurrentUserId() {
+    // DEBUG: Print what you're returning
+    String? userId = "${AppConstants.userId}"; // Replace with your actual method
+
+    print("getCurrentUserId() returning: '$userId'");
+    return userId;
+  }
+
+  Future<void> fetchItems() async {
+    print("=== CONTROLLER: Starting fetchItems ===");
+    print("AppConstants.userId: ${AppConstants.userId}");
+
+    try {
+      isLoading.value = true;
+
+      // Clear existing items first
+      itemList.clear();
+
+      print("Calling RemoteService.getUserItems...");
+      final items = await RemoteService.getUserItems(AppConstants.userId);
+
+      print("=== CONTROLLER: Received ${items.length} items ===");
+      for (int i = 0; i < items.length; i++) {
+        print("Item $i: ${items[i].toMap()}");
+      }
+
+      itemList.assignAll(items);
+      print("=== CONTROLLER: itemList length after assignAll: ${itemList.length} ===");
+
+      // Trigger UI update
+      update();
+
+    } catch (e) {
+      print("=== CONTROLLER ERROR: ${e.toString()} ===");
+      print("Stack trace: ${e.toString()}");
+
+      showCustomSnackbar(
+        title: "Error",
+        message: "Failed to load items: $e",
+        baseColor: Colors.red.shade700,
+        icon: Icons.error_outline,
+      );
+    } finally {
+      isLoading.value = false;
+      print("=== CONTROLLER: fetchItems completed ===");
+    }
+  }
+
+// Add this method to test different approaches
+  Future<void> testFetchItems() async {
+    print("=== Testing different fetch approaches ===");
+
+    try {
+      // Test approach 1: Original
+      print("Testing original approach...");
+      final items1 = await RemoteService.getUserItems(AppConstants.userId);
+      print("Original approach result: ${items1.length} items");
+
+      // Test approach 2: Alternative
+      print("Testing alternative approach...");
+      final items2 = await RemoteService.getUserItemsAlternative(AppConstants.userId);
+      print("Alternative approach result: ${items2.length} items");
+
+      // Use whichever works
+      if (items1.isNotEmpty) {
+        itemList.assignAll(items1);
+      } else if (items2.isNotEmpty) {
+        itemList.assignAll(items2);
+      }
+
+    } catch (e) {
+      print("Test error: $e");
     }
   }
 
@@ -395,8 +551,9 @@ class ItemController extends GetxController {
       isActive: isActive,
     );
 
+    print("=======ICCC---UID:-----${AppConstants.userId}");
     try {
-      await RemoteService.addItem(newItem);
+      await RemoteService.addItem(AppConstants.userId ,newItem);
       itemList.add(newItem);
       showCustomSnackbar(
         title: "Success",
@@ -571,6 +728,112 @@ class ItemController extends GetxController {
 
   void toggleShowInactive() {
     showInactiveItems.value = !showInactiveItems.value;
+  }
+
+  // Add these methods to your ItemController class
+  Future<void> loadCustomers() async {
+    try {
+      isLoadingCustomers.value = true;
+
+      final user = FirebaseAuth.instance.currentUser;
+      if (user == null) return;
+
+      // Get current company ID from SharedPreferences
+      String companyId = await await sharedPreferencesHelper.getPrefData("CompanyId") ?? "";
+      print("Company ID:-itemCntrol--------- $companyId");
+
+      if (companyId.isEmpty) {
+        showCustomSnackbar(
+          title: 'Company Required',
+          message: 'Please register a company first',
+          baseColor: Colors.orange,
+          icon: Icons.warning,
+        );
+        return;
+      }
+
+      // Load customers from Firebase
+      final customersSnapshot = await FirebaseFirestore.instance
+          .collection("users")
+          .doc(user.uid)
+          .collection("companies")
+          .doc(companyId)
+          .collection("customers")
+          .orderBy('createdAt', descending: true)
+          .get();
+
+      customers.clear();
+      for (var doc in customersSnapshot.docs) {
+        final customerData = doc.data();
+        customerData['id'] = doc.id;
+        customers.add(customerData);
+      }
+
+      print("Loaded ${customers.length} customers");
+
+    } catch (e) {
+      print("Error loading customers: $e");
+      showCustomSnackbar(
+        title: 'Error',
+        message: 'Failed to load customers',
+        baseColor: Colors.red.shade700,
+        icon: Icons.error_outline,
+      );
+    } finally {
+      isLoadingCustomers.value = false;
+    }
+  }
+
+  Future<void> saveNewCustomer({
+    required String name,
+    required String phone,
+    String? email,
+    String? address,
+  }) async {
+    try {
+      final user = FirebaseAuth.instance.currentUser;
+      if (user == null) return;
+
+      String companyId = await SharedPreferencesHelper().getPrefData("CompanyId") ?? "";
+      if (companyId.isEmpty) return;
+
+      final customerData = {
+        'name': name.trim(),
+        'phone': phone.trim(),
+        'email': email?.trim() ?? '',
+        'address': address?.trim() ?? '',
+        'createdAt': FieldValue.serverTimestamp(),
+        'isActive': true,
+      };
+
+      final docRef = await FirebaseFirestore.instance
+          .collection("users")
+          .doc(user.uid)
+          .collection("companies")
+          .doc(companyId)
+          .collection("customers")
+          .add(customerData);
+
+      // Add to local list
+      customerData['id'] = docRef.id;
+      customers.insert(0, customerData);
+
+      showCustomSnackbar(
+        title: 'Success',
+        message: 'Customer saved successfully',
+        baseColor: AppColors.darkGreenColor,
+        icon: Icons.check_circle_outline,
+      );
+
+    } catch (e) {
+      print("Error saving customer: $e");
+      showCustomSnackbar(
+        title: 'Error',
+        message: 'Failed to save customer',
+        baseColor: Colors.red.shade700,
+        icon: Icons.error_outline,
+      );
+    }
   }
 }
 ///for Single row
