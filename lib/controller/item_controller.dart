@@ -597,7 +597,7 @@ class ItemController extends GetxController {
       )).toList();
 
       print("Sending invoice data: ${invoicesWithUser.map((e) => e.toMap()).toList()}");
-      await RemoteService.addInvoice(invoicesWithUser);
+      await RemoteService.addInvoice(invoicesWithUser, AppConstants.userId);
 
       // Update stock after successful invoice
       await _updateStockAfterSale(invoices);

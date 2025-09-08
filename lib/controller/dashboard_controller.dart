@@ -12,6 +12,7 @@ import '../constant/constant.dart';
 import '../model/model.dart';
 import '../screen/screen.dart';
 import '../screen/setting/widgets/widgets.dart';
+import '../services/service.dart';
 import '../utils/shared_preferences_helper.dart';
 import '../widgets/widgets.dart';
 import 'controller.dart';
@@ -170,7 +171,7 @@ class DashboardController extends BaseController {
   var companyId = ''.obs;
   var allUserCompanies = <Map<String, dynamic>>[].obs; // Store all companies
   var hasMultipleCompanies = false.obs; // Track if user has multiple companies
-
+  var invoiceList = <Invoice>[].obs;
 
   final GlobalKey<ScaffoldState> scaffoldKey = GlobalKey<ScaffoldState>();
 
@@ -271,6 +272,59 @@ class DashboardController extends BaseController {
       }
     } catch (e) {
       print("Error loading company data: $e");
+    }
+  }
+
+  Future<void> loadInvoices() async {
+    try {
+      isLoading.value = true;
+
+      print("=== ATTEMPTING TO FETCH INVOICES ===");
+
+      // Try to get invoices
+      List<Invoice> invoices = await RemoteService.getInvoices();
+
+      // If no invoices found, try alternative methods
+      if (invoices.isEmpty) {
+        print("Standard method failed, trying alternative...");
+        invoices = await RemoteService.getInvoices();
+      }
+
+      print("Final result: ${invoices.length} invoices found");
+
+      // Debug: Print each found invoice
+      for (var invoice in invoices) {
+        print("Found invoice: ${invoice.invoiceId} (ID: ${invoice.itemName}) - Amount: ${invoice.totalAmount}");
+      }
+
+      invoiceList.assignAll(invoices);
+
+      if (invoices.isEmpty) {
+        showCustomSnackbar(
+          title: "No Invoices",
+          message: "No invoices found",
+          baseColor: Colors.orange.shade700,
+          icon: Icons.info_outline,
+        );
+      } else {
+        showCustomSnackbar(
+          title: "Success",
+          message: "Found ${invoices.length} invoices",
+          baseColor: Colors.green.shade700,
+          icon: Icons.check_circle_outline,
+        );
+      }
+
+    } catch (e) {
+      print("Error in fetchInvoices2(): $e");
+      showCustomSnackbar(
+        title: "Error",
+        message: "Failed to load invoices: $e",
+        baseColor: Colors.red.shade700,
+        icon: Icons.error_outline,
+      );
+    } finally {
+      isLoading.value = false;
     }
   }
 
@@ -489,7 +543,8 @@ class DashboardController extends BaseController {
       // Load dashboard statistics and customer count
       await Future.wait([
         _loadDashboardStatistics(),
-        loadCustomerCount(), // Add this line
+        loadCustomerCount(),
+        loadInvoices()
       ]);
 
     } catch (error) {
@@ -648,6 +703,7 @@ class DashboardController extends BaseController {
     loadDashboardData();
   }
 
+  ///working
   void navigateToCreateInvoice() {
     print("Compny--------:${companyId.value}");
     if (companyId.value.isEmpty) {
@@ -667,8 +723,38 @@ class DashboardController extends BaseController {
     //Get.toNamed(NewInvoiceScreen.pageId);
   }
 
+  void navigateToCreateInvoice22() {
+    print("Company--------:${companyId.value}");
+    if (companyId.value.isEmpty) {
+      Get.snackbar(
+        'Error',
+        'Please register a company first',
+        snackPosition: SnackPosition.BOTTOM,
+        backgroundColor: Colors.red,
+        colorText: Colors.white,
+      );
+      // Get.toNamed(CompanyRegistrationScreen.pageId);
+      return;
+    }
+    // Show the preview dialog before navigating
+    showInvoiceOptions();
+  }
+
+  void showInvoiceOptions() {
+    Get.dialog(
+      InvoicePreviewScreen(
+        // onOptionSelected: (option) {
+        //   Get.back(); // Close the dialog
+        //   Get.lazyPut<NewInvoiceController>(() => NewInvoiceController());
+        //   //Get.to(() => NewInvoiceScreen(pdfOption: option));
+        // },
+      ),
+    );
+  }
+
   void navigateToInvoiceList() {
-    Get.toNamed(ItemScreen.pageId);
+    Get.lazyPut<InvoiceListController>(() => InvoiceListController());
+    Get.to(InvoiceListScreen());
   }
 
   // Updated method to navigate to customer registration with company selection
@@ -898,11 +984,14 @@ class DashboardController extends BaseController {
   }
 
   void navigateToSettings() {
-    Get.to(
-          () => TemplatePreviewScreen(templateId: 2),
-      transition: Transition.rightToLeft,
-      duration: Duration(milliseconds: 300),
-    );
+    Get.lazyPut<NewChallanController>(() => NewChallanController());
+
+    Get.to(() => NewChallanScreen(),);
+    // Get.to(
+    //       () => NewChallanScreen(),
+    //   transition: Transition.rightToLeft,
+    //   duration: Duration(milliseconds: 300),
+    // );
   }
 
   void viewInvoiceDetails(String invoiceId) {
@@ -965,3 +1054,140 @@ class ChartData {
 
   ChartData(this.label, this.value, this.color);
 }
+
+
+
+
+
+
+class InvoicePreviewScreen extends StatefulWidget {
+  @override
+  _InvoicePreviewScreenState createState() => _InvoicePreviewScreenState();
+}
+
+class _InvoicePreviewScreenState extends State<InvoicePreviewScreen> {
+  PdfOption _selectedOption = PdfOption.standard;
+
+  Widget _buildStandardInvoicePreview() {
+    return Container(
+      decoration: BoxDecoration(
+        border: Border.all(color: Colors.grey.shade300),
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Column(
+        children: [
+          Padding(
+            padding: const EdgeInsets.all(8.0),
+            child: Text(
+              'Standard Invoice Preview',
+              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+            ),
+          ),
+          // In a real app, you would use: Image.asset("assets/images/inv_1.png")
+          // For this example, I'm creating a placeholder
+          Container(
+            width: 300,
+            height: 400,
+            color: Colors.grey.shade100,
+            child: Image.asset("assets/images/inv_2.png"),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildDetailedInvoicePreview() {
+    return Container(
+      decoration: BoxDecoration(
+        border: Border.all(color: Colors.grey.shade300),
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Column(
+        children: [
+          Padding(
+            padding: const EdgeInsets.all(8.0),
+            child: Text(
+              'Detailed Invoice Preview',
+              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+            ),
+          ),
+          // In a real app, you would use: Image.asset("assets/images/inv_3.png")
+          // For this example, I'm creating a placeholder
+          Container(
+            width: 300,
+            height: 400,
+            color: Colors.grey.shade100,
+            child: Image.asset("assets/images/inv_3.png"),
+          ),
+        ],
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: Text('Invoice Preview'),
+        centerTitle: true,
+      ),
+      body: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Select Invoice Type:',
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+            ),
+            SizedBox(height: 16),
+            Row(
+              children: [
+                Expanded(
+                  child: RadioListTile<PdfOption>(
+                    title: Text('Standard Invoice'),
+                    value: PdfOption.standard,
+                    groupValue: _selectedOption,
+                    onChanged: (PdfOption? value) {
+                      setState(() {
+                        _selectedOption = value!;
+                      });
+                    },
+                  ),
+                ),
+                Expanded(
+                  child: RadioListTile<PdfOption>(
+                    title: Text('Detailed Invoice'),
+                    value: PdfOption.detailed,
+                    groupValue: _selectedOption,
+                    onChanged: (PdfOption? value) {
+                      setState(() {
+                        _selectedOption = value!;
+                      });
+                    },
+                  ),
+                ),
+              ],
+            ),
+            SizedBox(height: 32),
+            Center(
+              child: _selectedOption == PdfOption.standard
+                  ? _buildStandardInvoicePreview()
+                  : _buildDetailedInvoicePreview(),
+            ),
+            SizedBox(height: 32),
+            Center(
+              child: Text(
+                'Note: Make sure to add your images to the assets/images folder\nand update the pubspec.yaml file accordingly.',
+                textAlign: TextAlign.center,
+                style: TextStyle(color: Colors.grey, fontStyle: FontStyle.italic),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+enum PdfOption { standard, detailed }

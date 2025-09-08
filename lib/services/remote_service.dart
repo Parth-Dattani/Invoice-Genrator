@@ -272,7 +272,10 @@ class RemoteService {
   static const String appId = "24b22f90-835f-4202-a038-3f1dd7057aa8";
   static const String accessKey = "V2-9NVog-SGuQ6-prAu2-HG5GE-Y6K1d-w40RW-XAlD5-EbLcB";
   static const String invoiceTableName = "Invoice";
+  static const String invoiceItemTableName = "invoiceItems";
+  static const String challanItemTableName = "ChallanItems";
   static const String itemsTableName = "Item";
+  static const String challanTableName = "Challan";
   ///static const String itemsTableName2 = "Item_";
   static const String apiKey = "cnp1X-AFICA-X25lf-NuAwm-jQfEr-Cj9nr-S9mqj-xOYni";
 
@@ -332,15 +335,79 @@ class RemoteService {
     }
   }
 
-  static Future<void> addInvoice(List<Invoice> invoices) async {
+  // static Future<void> addInvoice(List<Invoice> invoices,String userId) async {
+  //   checkInvoiceTableStructure();
+  //   final url = Uri.parse(
+  //       "https://api.appsheet.com/api/v2/apps/$appId/tables/$invoiceTableName/Action");
+  //
+  //   final invoiceData = invoices.map((inv) {
+  //     return {
+  //       ...inv.toMap(),
+  //       "userId": userId, // Make sure this matches your column name exactly
+  //     };
+  //   }).toList();
+  //
+  //
+  //   final body = jsonEncode({
+  //     "Action": "Add",
+  //     "Rows": invoiceData,
+  //   });
+  //
+  //   final response = await http.post(
+  //     url,
+  //     headers: {
+  //       "Content-Type": "application/json",
+  //       "ApplicationAccessKey": accessKey,
+  //     },
+  //     body: body,
+  //   );
+  //
+  //   print("AppSheet Response: ${response.statusCode} - ${response.body}");
+  //
+  //   if (response.statusCode == 200) {
+  //     final responseData = jsonDecode(response.body);
+  //     if (responseData is Map && responseData.containsKey("RowsAffected")) {
+  //       print("Invoice sent successfully. Rows affected: ${responseData["RowsAffected"]}");
+  //     } else {
+  //       print("Invoice sent successfully: ${response.body}");
+  //     }
+  //   } else {
+  //     throw Exception("Failed to send invoice: ${response.body}");
+  //   }
+  // }
+
+  static Future<void> addInvoice(dynamic invoiceData, String userId) async {
     checkInvoiceTableStructure();
     final url = Uri.parse(
         "https://api.appsheet.com/api/v2/apps/$appId/tables/$invoiceTableName/Action");
 
+    List<Map<String, dynamic>> rowsToSend = [];
+
+    if (invoiceData is Map<String, dynamic>) {
+      // Single invoice with items
+      if (invoiceData.containsKey('items') && invoiceData['items'] is List) {
+        invoiceData['items'] = jsonEncode(invoiceData['items']);
+      }
+      rowsToSend.add({
+        ...invoiceData,
+        "userId": userId,
+      });
+    } else if (invoiceData is List<Invoice>) {
+      // Multiple invoice rows (legacy format)
+      rowsToSend = invoiceData.map((inv) {
+        return {
+          ...inv.toMap(),
+          "userId": userId,
+        };
+      }).toList();
+    }
+
     final body = jsonEncode({
       "Action": "Add",
-      "Rows": invoices.map((e) => e.toMap()).toList(),
+      "Rows": rowsToSend,
     });
+
+    print("Sending to AppSheet: ${jsonEncode(body)}");
 
     final response = await http.post(
       url,
@@ -364,6 +431,490 @@ class RemoteService {
       throw Exception("Failed to send invoice: ${response.body}");
     }
   }
+
+  static Future<void> addInvoiceItem(Map<String, dynamic> itemData, String userId) async {
+    try {
+      print("Adding invoice item: ${jsonEncode(itemData)}");
+
+      final url = Uri.parse(
+          "https://api.appsheet.com/api/v2/apps/$appId/tables/$invoiceItemTableName/Action");
+
+      final Map<String, dynamic> requestBody = {
+        "Action": "Add",
+        "Properties": {
+          "Locale": "en-US",
+        },
+        "Rows": [
+       {   ...itemData,
+         //"userId": userId,
+      }    ]
+      };
+
+      final response = await http.post(
+        url,
+        headers: {
+          "Content-Type": "application/json",
+          "ApplicationAccessKey": accessKey, // Use the same access key as addInvoice
+        },
+        body: jsonEncode(requestBody),
+      );
+
+      print("Add Invoice Item Response: ${response.statusCode} - ${response.body}");
+
+      if (response.statusCode == 200) {
+        final responseData = jsonDecode(response.body);
+        if (responseData is Map && responseData.containsKey("RowsAffected")) {
+          print("Invoice item sent successfully. Rows affected: ${responseData["RowsAffected"]}");
+        } else {
+          print("Invoice item sent successfully: ${response.body}");
+        }
+      } else {
+        throw Exception("Failed to add invoice item: ${response.statusCode} - ${response.body}");
+      }
+    } catch (e) {
+      print("Error adding invoice item: $e");
+      rethrow;
+    }
+  }
+
+  static Future<void> addChallanItem(Map<String, dynamic> challanData, String userId) async {
+
+    try {
+      print("Adding challan item: ${jsonEncode(challanData)}");
+
+      final url = Uri.parse(
+          "https://api.appsheet.com/api/v2/apps/$appId/tables/$challanItemTableName/Action");
+
+      final Map<String, dynamic> requestBody = {
+        "Action": "Add",
+        "Properties": {
+          "Locale": "en-US",
+        },
+        "Rows": [
+          {
+            ...challanData,
+            //"userId": userId,
+          }
+        ]
+      };
+
+      final response = await http.post(
+        url,
+        headers: {
+          "Content-Type": "application/json",
+          "ApplicationAccessKey": accessKey,
+        },
+        body: jsonEncode(requestBody),
+      );
+
+      print("Add Challan Item Response: ${response.statusCode} - ${response.body}");
+
+      if (response.statusCode == 200) {
+        // ✅ ADD THIS CHECK FOR EMPTY RESPONSE
+        if (response.body.isNotEmpty) {
+          final responseData = jsonDecode(response.body);
+          if (responseData is Map && responseData.containsKey("RowsAffected")) {
+            print("Challan item sent successfully. Rows affected: ${responseData["RowsAffected"]}");
+          } else {
+            print("Challan item sent successfully: ${response.body}");
+          }
+        } else {
+          // ✅ HANDLE EMPTY RESPONSE AS SUCCESS
+          print("Challan item sent successfully. Empty response received.");
+        }
+      } else {
+        throw Exception("Failed to add challan item: ${response.statusCode} - ${response.body}");
+      }
+    } catch (e) {
+      print("Error adding challan item: $e");
+      rethrow;
+    }
+  }
+
+  static Future<List<InvoiceItem>> getInvoiceItemsByInvoiceId(String invoiceId) async {
+    try {
+      print("Fetching invoice items for invoice: $invoiceId");
+
+      final Map<String, dynamic> requestBody = {
+        "Action": "Find",
+        "Properties": {
+          "Locale": "en-US",
+        },
+        "Filters": [
+          ["invoiceId", "equals", invoiceId]
+        ]
+      };
+
+      final response = await http.post(
+        Uri.parse('https://api.appsheet.com/api/v2/apps/$appId/tables/InvoiceItems/Action'),
+        headers: {
+          'Content-Type': 'application/json',
+          'ApplicationAccessKey': accessKey,
+        },
+        body: jsonEncode(requestBody),
+      );
+
+      print("Invoice Items Response: ${response.statusCode} - ${response.body}");
+
+      if (response.statusCode == 200) {
+        final List<dynamic> responseData = jsonDecode(response.body);
+        print("API returned ${responseData.length} items total");
+
+        // FILTER ITEMS BY INVOICE ID - THIS IS THE KEY FIX!
+        final List<dynamic> filteredItems = responseData.where((item) {
+          if (item is Map<String, dynamic>) {
+            return item['invoiceId'] == invoiceId;
+          }
+          return false;
+        }).toList();
+
+        print("Found ${filteredItems.length} items for invoice $invoiceId");
+
+        return filteredItems.map((item) {
+          if (item is Map<String, dynamic>) {
+            return InvoiceItem.fromJson(item);
+          } else {
+            throw Exception('Invalid item format: $item');
+          }
+        }).toList();
+      } else {
+        throw Exception('Failed to fetch invoice items: ${response.statusCode}');
+      }
+    } catch (e) {
+      print("Error fetching invoice items: $e");
+      rethrow;
+    }
+  }
+
+  static Future<void> deleteInvoiceItems(String invoiceId) async {
+    try {
+      // First get all items for this invoice
+      List<InvoiceItem> items = await getInvoiceItemsByInvoiceId(invoiceId);
+
+      String url = 'https://api.appsheet.com/api/v2/apps/$appId/tables/$invoiceItemTableName/Action';
+
+      // Delete each item (you might need to adjust this based on your AppSheet setup)
+      for (var item in items) {
+        Map<String, dynamic> requestBody = {
+          "Action": "Delete",
+          "Properties": {},
+          "Rows": [
+            {
+              "invoiceId": invoiceId,
+              "itemId": item.itemId,
+            }
+          ]
+        };
+
+        await http.post(
+          Uri.parse(url),
+          headers: {
+            'ApplicationAccessKey': accessKey,
+            'Content-Type': 'application/json',
+          },
+          body: jsonEncode(requestBody),
+        );
+      }
+
+      print("Deleted ${items.length} invoice items for invoice $invoiceId");
+    } catch (e) {
+      print('Error deleting invoice items: $e');
+      throw Exception('Failed to delete invoice items: $e');
+    }
+  }
+
+  // static Future<void> addChallan(List<Challan> challans, String userId) async {
+  //   final url = Uri.parse(
+  //       "https://api.appsheet.com/api/v2/apps/$appId/tables/$challanTableName/Action");
+  //
+  //   final challansData = challans.map((challan) {
+  //     return {
+  //       ...challan.toMap(),
+  //       "userId": userId, // Make sure this matches your column name exactly
+  //     };
+  //   }).toList();
+  //
+  //   final body = jsonEncode({
+  //     "Action": "Add",
+  //     "Rows": challansData,
+  //   });
+  //
+  //   final response = await http.post(
+  //     url,
+  //     headers: {
+  //       "Content-Type": "application/json",
+  //       "ApplicationAccessKey": accessKey,
+  //     },
+  //     body: body,
+  //   );
+  //
+  //   print("AppSheet Response: ${response.statusCode} - ${response.body}");
+  //
+  //   if (response.statusCode == 200) {
+  //     final responseData = jsonDecode(response.body);
+  //     if (responseData is Map && responseData.containsKey("RowsAffected")) {
+  //       print("Challan sent successfully. Rows affected: ${responseData["RowsAffected"]}");
+  //     } else {
+  //       print("Challan sent successfully: ${response.body}");
+  //     }
+  //   } else {
+  //     throw Exception("Failed to send challan: ${response.body}");
+  //   }
+  // }
+
+  static Future<void> addChallan(dynamic challanData, String userId) async {
+    checkChallanTableStructure();
+    try {
+      print("=== STARTING ADD CHALLAN ===");
+
+      final url = Uri.parse(
+          "https://api.appsheet.com/api/v2/apps/$appId/tables/$challanTableName/Action");
+
+      // Print the actual URL being called
+      print("API URL: $url");
+      print("App ID: $appId");
+      print("Table Name: $challanTableName");
+
+      List<Map<String, dynamic>> rowsToSend = [];
+
+      if (challanData is Map<String, dynamic>) {
+        if (challanData.containsKey('items') && challanData['items'] is List) {
+          challanData['items'] = jsonEncode(challanData['items']);
+        }
+        rowsToSend.add({
+          ...challanData,
+          "userId": userId,
+        });
+      } else if (challanData is List<Challan>) {
+        print("Processing as Challan object");
+        rowsToSend = challanData.map((chal){
+          return {
+            ...chal.toMap(),
+            "userId": userId,
+          };
+        }).toList();
+      }
+
+      print("Rows to send: ${jsonEncode(rowsToSend)}");
+
+      final body = jsonEncode({
+        "Action": "Add",
+        // "Properties": {
+        //   "Locale": "en-US",
+        // },
+        "Rows": rowsToSend,
+      });
+
+      print("Sending to AppSheet: ${jsonEncode(body)}");
+
+      final response = await http.post(
+        url,
+        headers: {
+          "Content-Type": "application/json",
+          "ApplicationAccessKey": accessKey,
+        },
+        body: body,
+      );
+
+      print("=== RESPONSE ===");
+      print("Status Code: ${response.statusCode}");
+      print("Response Body: ${response.body}");
+      print("Response Headers: ${response.headers}");
+
+      if (response.statusCode == 200) {
+        if (response.body.isNotEmpty) {
+          try {
+            final responseData = jsonDecode(response.body);
+            if (responseData is Map && responseData.containsKey("RowsAffected")) {
+              print("Challan sent successfully. Rows affected: ${responseData["RowsAffected"]}");
+            } else {
+              print("Challan sent successfully: ${response.body}");
+            }
+          } catch (e) {
+            print("⚠️ Could not decode response JSON: $e");
+          }
+        } else {
+          print("✅ Challan added successfully (empty response body).");
+        }
+      }
+
+    } catch (e) {
+      print("❌ ERROR in addChallan: $e");
+      rethrow;
+    }
+  }
+
+
+  // Method to verify challan exists after saving
+
+  static Future<bool> verifyChallanExists(String challanId) async {
+    try {
+      print("=== VERIFYING CHALLAN EXISTS: $challanId ===");
+
+      final url = Uri.parse(
+          "https://api.appsheet.com/api/v2/apps/$appId/tables/$challanTableName/Action");
+
+      final body = jsonEncode({
+        "Action": "Find",
+        "Properties": {
+          "Locale": "en-US",
+        },
+        "Rows": [
+          {"challanId": challanId}
+        ]
+      });
+
+      final response = await http.post(
+        url,
+        headers: {
+          "Content-Type": "application/json",
+          "ApplicationAccessKey": accessKey,
+        },
+        body: body,
+      );
+
+      print("Verification response: ${response.statusCode} - ${response.body}");
+
+      if (response.statusCode == 200 && response.body.isNotEmpty) {
+        try {
+          final responseData = jsonDecode(response.body);
+          if (responseData is List && responseData.isNotEmpty) {
+            print("✅ Challan verified - exists in database");
+            return true;
+          } else {
+            print("❌ Challan not found in database");
+            return false;
+          }
+        } catch (e) {
+          print("Error parsing verification response: $e");
+          return false;
+        }
+      }
+      return false;
+    } catch (e) {
+      print("Error in verifyChallanExists: $e");
+      return false;
+    }
+  }
+  static Future<void> findChallanById(String challanId) async {
+    try {
+      print("=== SEARCHING FOR CHALLAN $challanId ===");
+
+      final url = Uri.parse(
+          "https://api.appsheet.com/api/v2/apps/$appId/tables/$challanTableName/Action");
+
+      final body = jsonEncode({
+        "Action": "Find",
+        "Properties": {
+          "Locale": "en-US",
+        },
+        "Rows": [
+          {"challanId": challanId}
+        ]
+      });
+
+      print("Find request: $body");
+
+      final response = await http.post(
+        url,
+        headers: {
+          "Content-Type": "application/json",
+          "ApplicationAccessKey": accessKey,
+        },
+        body: body,
+      );
+
+      print("Find response: ${response.statusCode} - ${response.body}");
+
+      if (response.statusCode == 200 && response.body.isNotEmpty) {
+        try {
+          final responseData = jsonDecode(response.body);
+          print("Found challan data: $responseData");
+        } catch (e) {
+          print("Error parsing find response: $e");
+        }
+      }
+    } catch (e) {
+      print("Error in findChallanById: $e");
+    }
+  }
+
+  static Future<void> listAllChallans() async {
+    try {
+      print("=== LISTING ALL CHALLANS ===");
+
+      final url = Uri.parse(
+          "https://api.appsheet.com/api/v2/apps/$appId/tables/$challanTableName/Action");
+
+      final body = jsonEncode({
+        "Action": "Find",
+        "Properties": {
+          "Locale": "en-US",
+        },
+        "Rows": [] // Empty to get all rows
+      });
+
+      final response = await http.post(
+        url,
+        headers: {
+          "Content-Type": "application/json",
+          "ApplicationAccessKey": accessKey,
+        },
+        body: body,
+      );
+
+      print("List all challans response: ${response.statusCode} - ${response.body}");
+    } catch (e) {
+      print("Error in listAllChallans: $e");
+    }
+  }
+
+
+  // Method to check table structure for debugging
+  static Future<void> checkChallanTableStructure() async {
+
+      print("=== CHECKING CHALLAN TABLE STRUCTURE ===");
+
+      final url = Uri.parse(
+          "https://api.appsheet.com/api/v2/apps/$appId/tables/$challanTableName/columns");
+
+      final body = jsonEncode({
+        "Action": "Find",
+        "Properties": {
+          "Locale": "en-US",
+          "Selector": 'Filter(1=1)',
+          "SelectColumns": ["challanId",
+            "itemId",
+            "customerId",
+            "customerName",
+            "customerMobile",
+            "customerEmail",
+            "customerAddress",
+            "itemId",
+            "itemName", "qty", "price", "subtotal", "taxRate",
+          "taxAmount",
+          "paymentStatus", "notes", "status", "userId"]
+        }
+      });
+try{
+      final response = await http.post(
+        url,
+        headers: {
+          "Content-Type": "application/json",
+          "ApplicationAccessKey": accessKey,
+        },
+        body: body
+      );
+      print("Table Structure Response: ${response.statusCode} - ${response.body}");
+
+    } catch (e) {
+  print("Error checking table structure: $e");
+  }
+
+  }
+
+
+
 
   static Future<void> checkInvoiceTableStructure() async {
     final url = Uri.parse(
@@ -427,6 +978,214 @@ class RemoteService {
       throw Exception("Failed to load invoices: ${response.body}");
     }
   }
+
+  static Future<List<Challan>> getChallans() async {
+    print("🔄 Fetching challans from AppSheet API...");
+
+    final url = Uri.parse(
+        "https://api.appsheet.com/api/v2/apps/$appId/tables/$challanTableName/Action");
+
+    final Map<String, dynamic> requestBody = {
+      "Action": "Find",
+      "Properties": {
+        "Locale": "en-US",
+      }
+    };
+
+    print("Challan request body: ${jsonEncode(requestBody)}");
+
+    try {
+      final response = await http.post(
+        url,
+        headers: {
+          "Content-Type": "application/json",
+          "ApplicationAccessKey": accessKey,
+        },
+        body: jsonEncode(requestBody),
+      );
+
+      print("Challan response status: ${response.statusCode}");
+
+      if (response.statusCode == 200) {
+        // Check for empty response
+        if (response.body.trim().isEmpty || response.body.trim() == "[]") {
+          print("Challan method returned empty data");
+          return <Challan>[];
+        }
+
+        dynamic data;
+        try {
+          data = jsonDecode(response.body);
+          print("Challan parsed data type: ${data.runtimeType}");
+        } catch (jsonError) {
+          print("Challan JSON decode error: $jsonError");
+          print("Raw response: ${response.body}");
+          return <Challan>[];
+        }
+
+        List<dynamic> challanData = [];
+
+        // Handle different response structures
+        if (data is List) {
+          challanData = data;
+          print("Direct list with ${challanData.length} challans");
+        } else if (data is Map) {
+          if (data.containsKey("Rows")) {
+            challanData = data["Rows"] ?? [];
+            print("Map with Rows: ${challanData.length} challans");
+          } else if (data.containsKey("Records")) {
+            challanData = data["Records"] ?? [];
+            print("Map with Records: ${challanData.length} challans");
+          } else if (data.containsKey("data")) {
+            challanData = data["data"] ?? [];
+            print("Map with data: ${challanData.length} challans");
+          } else {
+            print("Unknown map structure: ${data.keys}");
+            // Try to extract any list-like values
+            var listKeys = data.keys.where((key) => data[key] is List).toList();
+            if (listKeys.isNotEmpty) {
+              challanData = data[listKeys.first] ?? [];
+              print("Using first list key '${listKeys.first}': ${challanData.length} items");
+            } else {
+              // If it's a single record, wrap it in a list
+              challanData = [data];
+              print("Wrapping single record in list");
+            }
+          }
+        } else {
+          print("Unexpected data type: ${data.runtimeType}");
+          return <Challan>[];
+        }
+
+        // Handle empty data
+        if (challanData.isEmpty) {
+          print("No challan data found in response");
+          return <Challan>[];
+        }
+
+        // Convert to Challan objects with enhanced error handling
+        List<Challan> challans = [];
+        for (int i = 0; i < challanData.length; i++) {
+          try {
+            var item = challanData[i];
+
+            if (item is Map<String, dynamic>) {
+              print("Processing challan $i: $item");
+              Challan challan = Challan.fromJson(item);
+              challans.add(challan);
+            } else if (item is Map) {
+              // Convert dynamic map to String key map
+              var convertedMap = Map<String, dynamic>.from(item);
+              print("Processing challan $i: $convertedMap");
+              Challan challan = Challan.fromJson(convertedMap);
+              challans.add(challan);
+            } else {
+              print("Skipping invalid challan data at index $i: ${item.runtimeType}");
+              print("Problematic item: $item");
+            }
+          } catch (e) {
+            print("Error parsing challan item $i: $e");
+            print("Problematic item: ${challanData[i]}");
+            // Continue with other items instead of failing completely
+            continue;
+          }
+        }
+
+        print("Successfully parsed ${challans.length} challans");
+        return challans;
+
+      } else {
+        print("Challan HTTP error: ${response.statusCode}");
+        print("Error response: ${response.body}");
+        throw Exception('Failed to load challans: ${response.statusCode}');
+      }
+    } catch (e) {
+      print("Error in getChallans(): $e");
+      rethrow;
+    }
+  }
+
+  // Make challan date parsing match invoice date parsing
+  DateTime parseDate(dynamic dateValue) {
+    if (dateValue == null) return DateTime.now();
+
+    if (dateValue is DateTime) {
+      return dateValue;
+    }
+
+    if (dateValue is String) {
+      try {
+        // Use the same parsing logic as your invoices
+        return DateTime.parse(dateValue);
+      } catch (e) {
+        // Fallback for different formats (like MM/dd/yyyy)
+        if (dateValue.contains('/')) {
+          List<String> parts = dateValue.split('/');
+          if (parts.length == 3) {
+            int month = int.parse(parts[0]);
+            int day = int.parse(parts[1]);
+            int year = int.parse(parts[2]);
+            return DateTime(year, month, day);
+          }
+        }
+        return DateTime.now();
+      }
+    }
+
+    return DateTime.now();
+  }
+
+  // Add this at the beginning of your RemoteService class
+  static void printAppSheetConfig() {
+    print("=== APPSHEET CONFIGURATION ===");
+    print("App ID: $appId");
+    print("Invoice Table: $invoiceTableName");
+    print("Challan Table: $challanTableName");
+    print("Access Key: ${accessKey.substring(0, 10)}..."); // Show first 10 chars only
+  }
+
+/// Alternative method for fetching challans
+//   static Future<List<Challan>> getChallansAlternative() async {
+//     print("=== TRYING ALTERNATIVE METHOD: Read ===");
+//
+//     final url = Uri.parse(
+//         "https://api.appsheet.com/api/v2/apps/$appId/tables/$challanTableName/Data");
+//
+//     final response = await http.get(
+//       url,
+//       headers: {
+//         "Content-Type": "application/json",
+//         "ApplicationAccessKey": accessKey,
+//       },
+//     );
+//
+//     print("Read Response: ${response.statusCode} - ${response.body}");
+//
+//     if (response.statusCode == 200) {
+//       final data = jsonDecode(response.body);
+//
+//       if (data is List) {
+//         if (data.isEmpty) {
+//           print("✅ No challans found in alternative method");
+//           return [];
+//         }
+//         return data.map((e) => Challan.fromMap(e)).toList();
+//       } else if (data is Map && data.containsKey("")) {
+//         // Handle different response format
+//         List<dynamic> rows = data[""];
+//         if (rows.isEmpty) {
+//           print("✅ No challans found in alternative method");
+//           return [];
+//         }
+//         return rows.map((e) => Challan.fromMap(e)).toList();
+//       } else {
+//         print("⚠️ Unexpected response format in alternative method: $data");
+//         return [];
+//       }
+//     } else {
+//       throw Exception("Failed to load challans (alternative): ${response.body}");
+//     }
+//   }
 
   /// Get all items from Items table with enhanced fields
   static Future<List<Item>> getItemsoldwork() async {
@@ -710,6 +1469,82 @@ class RemoteService {
     }
   }
 
+  ///new
+
+
+  static Future<List<Invoice>> getInvoices() async {
+    print("🔄 Trying alternative invoice fetch method...");
+
+    final url = Uri.parse(
+        "https://api.appsheet.com/api/v2/apps/$appId/tables/$invoiceTableName/Action");
+
+    // Try a simpler request without sorting
+    final simpleBody = jsonEncode({
+      "Action": "Find",
+      "Properties": {
+        "Locale": "en-US",
+      }
+    });
+
+    print("Alternative request body: $simpleBody");
+
+    try {
+      final response = await http.post(
+        url,
+        headers: {
+          "Content-Type": "application/json",
+          "ApplicationAccessKey": accessKey,
+        },
+        body: simpleBody,
+      );
+
+      print("Alternative response status: ${response.statusCode}");
+
+      if (response.statusCode == 200) {
+        if (response.body.trim().isEmpty || response.body.trim() == "[]") {
+          print("Alternative method also returned empty");
+          return <Invoice>[];
+        }
+
+        dynamic data;
+        try {
+          data = jsonDecode(response.body);
+          print("Alternative parsed data type: ${data.runtimeType}");
+        } catch (jsonError) {
+          print("Alternative JSON decode error: $jsonError");
+          return <Invoice>[];
+        }
+
+        List<dynamic> invoiceData = [];
+
+        if (data is List) {
+          invoiceData = data;
+          print("Alternative direct list with ${invoiceData.length} invoices");
+        } else if (data is Map) {
+          if (data.containsKey("Rows")) {
+            invoiceData = data["Rows"];
+            print("Alternative map with Rows: ${invoiceData.length} invoices");
+          } else if (data.containsKey("Records")) {
+            invoiceData = data["Records"];
+            print("Alternative map with Records: ${invoiceData.length} invoices");
+          } else {
+            print("Alternative unknown map structure: ${data.keys}");
+            invoiceData = [data];
+          }
+        }
+
+        return invoiceData.map((e) => Invoice.fromMap(e as Map<String, dynamic>)).toList();
+
+      } else {
+        print("Alternative HTTP error: ${response.statusCode}");
+        return <Invoice>[];
+      }
+    } catch (e) {
+      print("Error in getInvoicesAlternative: $e");
+      return <Invoice>[];
+    }
+  }
+
 // Method 2: Get all data and filter manually (fallback)
   static Future<List<Item>> getAllAndFilterManually(String userId) async {
     print("=== MANUAL FILTERING FALLBACK ===");
@@ -840,120 +1675,7 @@ class RemoteService {
       print("Test error: $e");
     }
   }
-  ///
-  ///
-  // Step 1: First, let's debug what userId you're getting
-  // static Future<List<Item>> getItems({String? userId}) async {
-  //   final url = Uri.parse(
-  //       "https://api.appsheet.com/api/v2/apps/$appId/tables/$itemsTableName/Action");
-  //
-  //   // DEBUG: Print the userId value
-  //   print("=== DEBUG INFO ===");
-  //   print("userId parameter: '$userId'");
-  //   print("userId is null: ${userId == null}");
-  //   print("userId is empty: ${userId?.isEmpty ?? true}");
-  //   print("userId length: ${userId?.length ?? 0}");
-  //
-  //   String selector;
-  //
-  //   // For debugging, first get all items to see the data structure
-  //   if (userId == null || userId.isEmpty) {
-  //     print("No userId provided, getting all items for debugging");
-  //     selector = "Filter(1=1)"; // Get all items
-  //   } else {
-  //     print("Building selector for userId: '$userId'");
-  //
-  //     // Try different column name variations (AppSheet column names might be different)
-  //     // Try these one by one:
-  //     selector = "Filter([userId] = '$userId')";           // Option 1: userId
-  //     // selector = "Filter([UserId] = '$userId')";        // Option 2: UserId (capital U)
-  //     // selector = "Filter([user_id] = '$userId')";       // Option 3: user_id
-  //     // selector = "Filter([UserID] = '$userId')";        // Option 4: UserID
-  //     // selector = "Filter([User ID] = '$userId')";       // Option 5: User ID (with space)
-  //   }
-  //
-  //   final body = jsonEncode({
-  //     "Action": "Find",
-  //     "Properties": {
-  //       "Locale": "en-US",
-  //       "Selector": selector,
-  //     }
-  //   });
-  //
-  //   print("Request selector: $selector");
-  //   print("Full request body: $body");
-  //
-  //   try {
-  //     final response = await http.post(
-  //       url,
-  //       headers: {
-  //         "Content-Type": "application/json",
-  //         "ApplicationAccessKey": accessKey,
-  //       },
-  //       body: body,
-  //     );
-  //
-  //     print("Response Status: ${response.statusCode}");
-  //     print("Response Body: ${response.body}");
-  //
-  //     if (response.statusCode == 200) {
-  //       if (response.body.trim().isEmpty) {
-  //         print("EMPTY RESPONSE - This means:");
-  //         print("1. The filter didn't match any records, OR");
-  //         print("2. The column name is wrong, OR");
-  //         print("3. The userId value doesn't exist in the data");
-  //         return <Item>[];
-  //       }
-  //
-  //       dynamic data;
-  //       try {
-  //         data = jsonDecode(response.body);
-  //         print("Parsed data successfully");
-  //
-  //         // DEBUG: Print first item to see column names
-  //         if (data is List && data.isNotEmpty) {
-  //           print("SAMPLE ITEM DATA:");
-  //           print("Keys in first item: ${(data[0] as Map).keys.toList()}");
-  //           print("First item: ${data[0]}");
-  //         } else if (data is Map && data.containsKey("Rows") && data["Rows"].isNotEmpty) {
-  //           print("SAMPLE ITEM DATA:");
-  //           print("Keys in first row: ${(data["Rows"][0] as Map).keys.toList()}");
-  //           print("First row: ${data["Rows"][0]}");
-  //         }
-  //
-  //       } catch (jsonError) {
-  //         print("JSON decode error: $jsonError");
-  //         throw Exception("Failed to parse response: $jsonError");
-  //       }
-  //
-  //       List<dynamic> itemsData = [];
-  //
-  //       if (data is List) {
-  //         itemsData = data;
-  //       } else if (data is Map) {
-  //         if (data.containsKey("Rows")) {
-  //           itemsData = data["Rows"];
-  //         } else if (data.containsKey("Records")) {
-  //           itemsData = data["Records"];
-  //         }
-  //       }
-  //
-  //       print("Found ${itemsData.length} items");
-  //       return itemsData.map((e) => Item.fromMap(e as Map<String, dynamic>)).toList();
-  //
-  //     } else {
-  //       print("HTTP Error: ${response.statusCode}");
-  //       print("Error Body: ${response.body}");
-  //       throw Exception("HTTP ${response.statusCode}: ${response.body}");
-  //     }
-  //   } catch (e) {
-  //     print("Request failed: $e");
-  //     rethrow;
-  //   }
-  // }
 
-
-// Step 3: Make sure your getCurrentUserId() method is working
   String? getCurrentUserId() {
     // DEBUG: Print what you're returning
     String? userId = "your_actual_user_id"; // Replace with your actual method

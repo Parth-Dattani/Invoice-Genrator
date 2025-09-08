@@ -46,6 +46,8 @@ dependencies:
   firebase_auth:
   supabase_flutter: ^2.10.0
   cloud_firestore:
+  open_file:
+  intl:
 
 
 dev_dependencies:

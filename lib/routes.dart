@@ -69,4 +69,16 @@ List<GetPage> appPages = [
       page: () => NewInvoiceScreen(),
       binding: NewInvoiceBinding()
   ),
+
+  GetPage(
+      name: InvoiceListScreen.pageId,
+      page: () => InvoiceListScreen(),
+      binding: InvoiceListBinding()
+  ),
+
+  GetPage(
+      name: InvoiceDetailsScreen.pageId,
+      page: () => InvoiceDetailsScreen(),
+      binding: InvoiceListBinding()
+  ),
 ];

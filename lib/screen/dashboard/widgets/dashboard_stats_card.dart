@@ -39,7 +39,7 @@ class DashboardStatsCard extends GetView<DashboardController> {
             Expanded(
               child: _buildStatCard(
                 title: 'Total Invoices',
-                value: '${controller.totalInvoices.value}',
+                value: '${controller.invoiceList.length}',
                 icon: Icons.receipt_long,
                 color: Colors.blue,
               ),

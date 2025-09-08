@@ -2272,7 +2272,7 @@ class ItemScreen extends GetView<ItemController> {
                                   final cartCopy = controller.cart.toList();
                                   final saved = await controller.saveInvoice(cartCopy, userName, phone);
                                   if (saved) {
-                                    await InvoiceHelper.generateAndShareInvoice(cartCopy, userName, phone);
+                                    ///await InvoiceHelper.generateAndShareInvoice(cartCopy, userName, phone);
                                     // Now you can clear the cart if you want
                                     controller.clearCart();
 

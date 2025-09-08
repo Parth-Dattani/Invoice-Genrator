@@ -47,23 +47,18 @@ class RecentInvoicesCard extends GetView<DashboardController> {
           ListView.separated(
             shrinkWrap: true,
             physics: NeverScrollableScrollPhysics(),
-            itemCount: controller.recentInvoices.length,
+            itemCount: controller.invoiceList.take(5).length,
+            reverse: true,
             separatorBuilder: (context, index) => Divider(height: 1),
             itemBuilder: (context, index) {
-              final invoice = controller.recentInvoices[index];
+              final invoice = controller.invoiceList.take(5).toList()[index];
               return ListTile(
                 leading: CircleAvatar(
-                  backgroundColor: _getStatusColor(
-                      'paid'
-                      //invoice.status
-                  ).withOpacity(0.1),
+                  backgroundColor: _getStatusColor('paid').withOpacity(0.1),
                   child: Text(
                     invoice.customerName.substring(0, 1),
                     style: TextStyle(
-                      color: _getStatusColor(
-                          'paid'
-                        //invoice.status
-                      ),
+                      color: _getStatusColor('paid'),
                       fontWeight: FontWeight.bold,
                     ),
                   ),
@@ -72,10 +67,6 @@ class RecentInvoicesCard extends GetView<DashboardController> {
                   '${invoice.invoiceId} - ${invoice.customerName}',
                   style: TextStyle(fontWeight: FontWeight.w500),
                 ),
-                // subtitle: Text(
-                //   DateFormat('MMM dd, yyyy').format(invoice.date),
-                //   style: TextStyle(color: Colors.grey.shade600),
-                // ),
                 trailing: Column(
                   crossAxisAlignment: CrossAxisAlignment.end,
                   mainAxisAlignment: MainAxisAlignment.center,
@@ -90,20 +81,13 @@ class RecentInvoicesCard extends GetView<DashboardController> {
                     Container(
                       padding: EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                       decoration: BoxDecoration(
-                        color: _getStatusColor(
-                          'paid'
-                          //invoice.status
-                        ).withOpacity(0.1),
+                        color: _getStatusColor('paid').withOpacity(0.1),
                         borderRadius: BorderRadius.circular(10),
                       ),
                       child: Text(
                         'paid',
-                        //invoice.status,
                         style: TextStyle(
-                          color: _getStatusColor(
-                            'paid'
-                            ///invoice.status
-                          ),
+                          color: _getStatusColor('paid'),
                           fontSize: 10,
                           fontWeight: FontWeight.w500,
                         ),
