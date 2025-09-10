@@ -657,12 +657,6 @@ class ItemController extends GetxController {
   }) async {
     print("=== EDIT ITEM DEBUG ===");
     print("ItemId: $itemId");
-    print("NewName: $newName");
-    print("NewPrice: $newPrice");
-    print("UnitOfMeasurement: $unitOfMeasurement");
-    print("CurrentStock: $currentStock");
-    print("DetailRequirement: $detailRequirement");
-    print("IsActive: $isActive");
 
     try {
       isLoading.value = true;
@@ -689,7 +683,7 @@ class ItemController extends GetxController {
       print("Created updated item: ${updatedItem.toMap()}");
 
       // Call API to update
-      await RemoteService.editItem(updatedItem);
+      await RemoteService.editItemAlternative3(AppConstants.userId, updatedItem);
       print("API call successful");
 
       // Update local list
@@ -715,16 +709,174 @@ class ItemController extends GetxController {
 
       showCustomSnackbar(
         title: "Error",
-        message: "Failed to edit item: $e",
+        message: "Failed to edit item: ${e.toString()}",
         baseColor: Colors.red,
         icon: Icons.error_outline,
       );
 
-      rethrow; // Re-throw so the UI can handle it
+      rethrow;
     } finally {
       isLoading.value = false;
     }
   }
+
+  Future<void> deleteItem({
+    required String itemId,
+  }) async {
+    print("=== DELETE ITEM DEBUG ===");
+    print("ItemId: $itemId");
+
+    try {
+      isLoading.value = true;
+
+      // Find the current item to ensure we have the right one
+      final currentIndex = itemList.indexWhere((item) => item.itemId == itemId);
+      if (currentIndex == -1) {
+        throw Exception("Item not found in local list");
+      }
+
+      final currentItem = itemList[currentIndex];
+      print("Found current item: ${currentItem.itemName}");
+
+      // Create updated item with isActive = false (soft delete)
+      final updatedItem = Item(
+        itemId: currentItem.itemId,
+        itemName: currentItem.itemName,
+        price: currentItem.price,
+        unitOfMeasurement: currentItem.unitOfMeasurement,
+        currentStock: currentItem.currentStock,
+        detailRequirement: currentItem.detailRequirement,
+        isActive: false, // This is the key change - set to false for soft delete
+      );
+
+      print("Created updated item for soft delete: ${updatedItem.toMap()}");
+
+      // Call API to update (same as edit, just setting isActive = false)
+      await RemoteService.editItemAlternative3(AppConstants.userId, updatedItem);
+      print("API call successful - item marked as inactive");
+
+      // Remove from local list (since it's now inactive)
+      itemList.removeAt(currentIndex);
+      print("Removed item from local list at index $currentIndex");
+
+      // Force UI refresh
+      itemList.refresh();
+      print("Refreshed itemList");
+
+      showCustomSnackbar(
+        title: "Success",
+        message: "Item deleted successfully",
+        baseColor: Colors.green,
+        icon: Icons.check_circle,
+      );
+      isLoading.value = false;
+
+      print("=== DELETE ITEM SUCCESS ===");
+    } catch (e) {
+      print("=== DELETE ITEM ERROR ===");
+      print("Error details: $e");
+      print("Error type: ${e.runtimeType}");
+
+      showCustomSnackbar(
+        title: "Error",
+        message: "Failed to delete item: ${e.toString()}",
+        baseColor: Colors.red,
+        icon: Icons.error_outline,
+      );
+      isLoading.value = false;
+      rethrow;
+    } finally {
+      isLoading.value = false;
+    }
+  }
+
+  // // Method to restore a soft-deleted item (set isActive = true)
+  // Future<void> restoreItem({
+  //   required String itemId,
+  // }) async {
+  //   print("=== RESTORE ITEM DEBUG ===");
+  //   print("ItemId: $itemId");
+  //
+  //   try {
+  //     isLoading.value = true;
+  //
+  //     // You might need to fetch the item from the server first since it's not in local list
+  //     // Or maintain a separate list of deleted items
+  //
+  //     // For now, assuming you have the item data available
+  //     // You'll need to modify this based on how you want to handle deleted items
+  //
+  //     print("Attempting to restore item with ID: $itemId");
+  //
+  //     // Create a method to fetch deleted item data
+  //     final itemToRestore = await _fetchDeletedItem(itemId);
+  //
+  //     if (itemToRestore == null) {
+  //       throw Exception("Deleted item not found");
+  //     }
+  //
+  //     // Create updated item with isActive = true (restore)
+  //     final restoredItem = Item(
+  //       itemId: itemToRestore.itemId,
+  //       itemName: itemToRestore.itemName,
+  //       price: itemToRestore.price,
+  //       unitOfMeasurement: itemToRestore.unitOfMeasurement,
+  //       currentStock: itemToRestore.currentStock,
+  //       detailRequirement: itemToRestore.detailRequirement,
+  //       isActive: true, // Restore the item
+  //     );
+  //
+  //     print("Created restored item: ${restoredItem.toMap()}");
+  //
+  //     // Call API to update (set isActive = true)
+  //     await RemoteService.editItemAlternative3(AppConstants.userId, restoredItem);
+  //     print("API call successful - item restored");
+  //
+  //     // Add back to local list
+  //     itemList.add(restoredItem);
+  //     print("Added restored item back to local list");
+  //
+  //     // Force UI refresh
+  //     itemList.refresh();
+  //     print("Refreshed itemList");
+  //
+  //     showCustomSnackbar(
+  //       title: "Success",
+  //       message: "Item restored successfully",
+  //       baseColor: Colors.green,
+  //       icon: Icons.check_circle,
+  //     );
+  //
+  //     print("=== RESTORE ITEM SUCCESS ===");
+  //   } catch (e) {
+  //     print("=== RESTORE ITEM ERROR ===");
+  //     print("Error details: $e");
+  //     print("Error type: ${e.runtimeType}");
+  //
+  //     showCustomSnackbar(
+  //       title: "Error",
+  //       message: "Failed to restore item: ${e.toString()}",
+  //       baseColor: Colors.red,
+  //       icon: Icons.error_outline,
+  //     );
+  //
+  //     rethrow;
+  //   } finally {
+  //     isLoading.value = false;
+  //   }
+  // }
+
+/// Helper method to fetch deleted item data
+//   Future<Item?> _fetchDeletedItem(String itemId) async {
+//     try {
+//       // Fetch deleted items from server where isActive = false
+//       final deletedItems = await RemoteService.getDeletedItems(AppConstants.userId);
+//       return deletedItems.firstWhere((item) => item.itemId == itemId);
+//     } catch (e) {
+//       print("Error fetching deleted item: $e");
+//       return null;
+//     }
+//   }
 
   void toggleShowInactive() {
     showInactiveItems.value = !showInactiveItems.value;

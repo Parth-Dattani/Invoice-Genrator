@@ -48,6 +48,8 @@ dependencies:
   cloud_firestore:
   open_file:
   intl:
+  syncfusion_flutter_charts:
+  shimmer:
 
 
 dev_dependencies:

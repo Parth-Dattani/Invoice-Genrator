@@ -35,9 +35,9 @@ class QuickActionsGrid extends GetView<DashboardController> {
             ),
             _buildActionCard(
               icon: Icons.list_alt,
-              label: 'All Invoices',
+              label: 'New Challan',
               color: Colors.green,
-              onTap: controller.navigateToInvoiceList,
+              onTap: controller.navigateToNewChallan,
             ),
             _buildActionCard(
               icon: Icons.people,
@@ -46,10 +46,10 @@ class QuickActionsGrid extends GetView<DashboardController> {
               onTap: controller.navigateToCustomers,
             ),
             _buildActionCard(
-              icon: Icons.bar_chart,
-              label: 'Reports',
+              icon: Icons.production_quantity_limits,
+              label: 'Items',
               color: Colors.orange,
-              onTap: controller.navigateToReports,
+              onTap: controller.navigateToItems,
             ),
           ],
         ),

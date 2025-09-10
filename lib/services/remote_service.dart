@@ -4,6 +4,7 @@ import 'package:demo_prac_getx/constant/app_constant.dart';
 import 'package:demo_prac_getx/model/comment_model.dart';
 import 'package:demo_prac_getx/services/api.dart';
 import 'package:http/http.dart' as http;
+import 'package:intl/intl.dart';
 
 import '../model/model.dart';
 import '../utils/pdf_helper.dart';
@@ -869,6 +870,68 @@ class RemoteService {
     }
   }
 
+  static Future<List<ChallanItem>> getChallanItemsByChallanId(String challanId) async {
+    try {
+      print("Fetching challan items for challan: $challanId");
+
+      final Map<String, dynamic> requestBody = {
+        "Action": "Find",
+        "Properties": {
+          "Locale": "en-US",
+        },
+        "Filters": [
+          ["challanId", "equals", challanId] // FIX: Changed "invoiceId" to "challanId"
+        ]
+      };
+
+      final response = await http.post(
+        Uri.parse('https://api.appsheet.com/api/v2/apps/$appId/tables/$challanItemTableName/Action'),
+        headers: {
+          'Content-Type': 'application/json',
+          'ApplicationAccessKey': accessKey,
+        },
+        body: jsonEncode(requestBody),
+      );
+
+      print("Challan Items Response: ${response.statusCode} - ${response.body}");
+
+      if (response.statusCode == 200) {
+        final dynamic responseData = jsonDecode(response.body);
+
+        // FIX: AppSheet returns a Map, not a List directly
+        List<dynamic> itemsData = [];
+
+        if (responseData is Map<String, dynamic>) {
+          // Check if response has 'data' field (common in AppSheet)
+          if (responseData.containsKey('data')) {
+            itemsData = responseData['data'] ?? [];
+          } else {
+            // If no 'data' field, try to use the response as list
+            itemsData = responseData.values.toList();
+          }
+        } else if (responseData is List) {
+          itemsData = responseData;
+        }
+
+        print("API returned ${itemsData.length} items total");
+
+        // No need for additional filtering - the API filter should handle it
+        return itemsData.map((item) {
+          if (item is Map<String, dynamic>) {
+            return ChallanItem.fromJson(item);
+          } else {
+            print("Invalid item format: $item");
+            return ChallanItem.fromJson({}); // Return empty item
+          }
+        }).toList();
+      } else {
+        throw Exception('Failed to fetch challan items: ${response.statusCode}');
+      }
+    } catch (e) {
+      print("Error fetching Challan items: $e");
+      rethrow;
+    }
+  }
 
   // Method to check table structure for debugging
   static Future<void> checkChallanTableStructure() async {
@@ -1105,34 +1168,182 @@ try{
     }
   }
 
-  // Make challan date parsing match invoice date parsing
-  DateTime parseDate(dynamic dateValue) {
-    if (dateValue == null) return DateTime.now();
-
-    if (dateValue is DateTime) {
-      return dateValue;
-    }
-
-    if (dateValue is String) {
-      try {
-        // Use the same parsing logic as your invoices
-        return DateTime.parse(dateValue);
-      } catch (e) {
-        // Fallback for different formats (like MM/dd/yyyy)
-        if (dateValue.contains('/')) {
-          List<String> parts = dateValue.split('/');
-          if (parts.length == 3) {
-            int month = int.parse(parts[0]);
-            int day = int.parse(parts[1]);
-            int year = int.parse(parts[2]);
-            return DateTime(year, month, day);
+  static Future<List<ChallanItem>> getChallanItems(String challanId) async {
+    try {
+      final Map<String, dynamic> requestBody = {
+        "Action": "Find",
+        "Properties": {
+          "Locale": "en-US",
+        },
+        "Rows": [
+          {
+            "ChallanId": challanId // Filter by challanId
           }
-        }
-        return DateTime.now();
-      }
-    }
+        ]
+      };
 
-    return DateTime.now();
+      final response = await http.post(
+        Uri.parse('https://api.appsheet.com/api/v2/apps/$appId/tables/ChallanItems/Action'),
+        headers: {
+          'Content-Type': 'application/json',
+          'ApplicationAccessKey': accessKey, // Add your AppSheet access key
+        },
+        body: json.encode(requestBody),
+      );
+
+      if (response.statusCode == 200) {
+        final Map<String, dynamic> responseData = json.decode(response.body);
+        final List<dynamic> data = responseData['data'] ?? [];
+
+        print("Found ${data.length} items for challan $challanId");
+
+        return data.map((item) => ChallanItem.fromJson(item)).toList();
+      } else {
+        print("Failed to load challan items. Status: ${response.statusCode}");
+        throw Exception('Failed to load challan items');
+      }
+    } catch (e) {
+      print('Error fetching challan items: $e');
+      return [];
+    }
+  }
+// In RemoteService - add this method
+  static Future<List<Challan>> getChallansWithItemsByCustomer(String customerName) async {
+    try {
+      // First get all challans for this customer
+      List<Challan> customerChallans = await getChallansByDateRange(
+        fromDate: DateTime.now().subtract(Duration(days: 365)), // wider date range
+        toDate: DateTime.now(),
+        userId: AppConstants.userId,
+      );
+
+      // Filter by customer name
+      customerChallans = customerChallans.where((challan) =>
+      challan.customerName == customerName).toList();
+
+      print("Processing ${customerChallans.length} challans for $customerName to fetch items...");
+
+      // For each challan, fetch its items
+      for (int i = 0; i < customerChallans.length; i++) {
+        print("Fetching items for challan ${i + 1}/${customerChallans.length}: ${customerChallans[i].challanId}");
+
+        List<ChallanItem> items = await getChallanItemsByChallanId(customerChallans[i].challanId);
+
+        // Update the challan with items
+        customerChallans[i] = customerChallans[i].copyWith(items: items);
+
+        print("Added ${items.length} items to challan ${customerChallans[i].challanId}");
+      }
+
+      return customerChallans;
+    } catch (e) {
+      print('Error fetching challans with items for customer $customerName: $e');
+      return [];
+    }
+  }
+
+  // In RemoteService
+  static Future<List<Challan>> getChallansWithItems() async {
+    try {
+      // First get all challans
+      List<Challan> challans = await getChallansByDateRange(
+        fromDate: DateTime.now().subtract(Duration(days: 30)),
+        toDate: DateTime.now(),
+        userId: AppConstants.userId,
+      );
+
+      print("Processing ${challans.length} challans to fetch items...");
+
+      // For each challan, fetch its items from ChallanItems table
+      for (int i = 0; i < challans.length; i++) {
+        print("Fetching items for challan ${i + 1}/${challans.length}: ${challans[i].challanId}");
+
+        List<ChallanItem> items = await getChallanItemsByChallanId(challans[i].challanId);
+
+        // Update the challan with items
+        challans[i] = challans[i].copyWith(items: items);
+
+        print("Added ${items.length} items to challan ${challans[i].challanId}");
+      }
+
+      return challans;
+    } catch (e) {
+      print('Error fetching challans with items: $e');
+      return [];
+    }
+  }
+
+  // In your ApiService class
+  static Future<List<Challan>> getChallansByDateRange({
+    required DateTime fromDate,
+    required DateTime toDate,
+    required String userId,
+  }) async {
+    try {
+      // First get all challans for this user
+      final filterString = '[UserId] = "$userId",---- fromDate- :$fromDate, ----toDAte : $toDate ';
+      print("-------------Filter String: $filterString");
+
+      final requestBody = {
+        "Action": "Find",
+        "Properties": {
+          "Locale": "en-US"
+        },
+        "Filters": [
+          {
+            "Filter": filterString
+          }
+        ]
+      };
+
+      final response = await http.post(
+        Uri.parse('https://api.appsheet.com/api/v2/apps/$appId/tables/$challanTableName/Action'),
+        headers: {
+          'Content-Type': 'application/json',
+          'ApplicationAccessKey': accessKey,
+        },
+        body: json.encode(requestBody),
+      );
+
+      if (response.statusCode == 200) {
+        final dynamic decodedData = json.decode(response.body);
+        List<dynamic> rows;
+
+        if (decodedData is List) {
+          rows = decodedData;
+        } else if (decodedData is Map && decodedData.containsKey('Rows')) {
+          rows = decodedData['Rows'] ?? [];
+        } else {
+          rows = [];
+        }
+
+        // Filter locally by date
+        final filteredRows = rows.where((challan) {
+          try {
+            // Parse the date string from AppSheet (MM/dd/yyyy format)
+            final dateStr = challan['challanDate'] as String;
+            final dateParts = dateStr.split('/');
+            final month = int.parse(dateParts[0]);
+            final day = int.parse(dateParts[1]);
+            final year = int.parse(dateParts[2]);
+            final challanDate = DateTime(year, month, day);
+
+            // Check if date is within range
+            return challanDate.isAfter(fromDate.subtract(Duration(days: 1))) &&
+                challanDate.isBefore(toDate.add(Duration(days: 1)));
+          } catch (e) {
+            return false;
+          }
+        }).toList();
+
+        print("-------------Filtered Rows: ${filteredRows.length}");
+        return filteredRows.map((json) => Challan.fromJson(json)).toList();
+      } else {
+        throw Exception('Failed to load challans: ${response.statusCode}');
+      }
+    } catch (e) {
+      throw Exception('Failed to load challans: $e');
+    }
   }
 
   // Add this at the beginning of your RemoteService class
@@ -1469,7 +1680,75 @@ try{
     }
   }
 
-  ///new
+
+// Alternative 3: Delete and Add (as last resort)
+  static Future<void> editItemAlternative3(String userId, Item item) async {
+    print("=== TRYING ALTERNATIVE 3: DELETE AND ADD ===");
+
+    final url = Uri.parse(
+        "https://api.appsheet.com/api/v2/apps/$appId/tables/$itemsTableName/Action");
+
+    // Step 1: Delete the existing item
+    final deleteBody = jsonEncode({
+      "Action": "Delete",
+      "Rows": [
+        {"itemId": item.itemId}
+      ],
+    });
+
+    print("Delete request: $deleteBody");
+
+    final deleteResponse = await http.post(
+      url,
+      headers: {
+        "Content-Type": "application/json",
+        "ApplicationAccessKey": accessKey,
+      },
+      body: deleteBody,
+    );
+
+    print("Delete response: ${deleteResponse.statusCode} - ${deleteResponse.body}");
+
+    if (deleteResponse.statusCode != 200) {
+      throw Exception("Failed to delete item: ${deleteResponse.body}");
+    }
+
+    // Step 2: Add the updated item
+    await Future.delayed(Duration(seconds: 1)); // Small delay
+
+    final addBody = jsonEncode({
+      "Action": "Add",
+      "Rows": [
+        {
+          "itemId": item.itemId,
+          "itemName": item.itemName,
+          "price": item.price,
+          "unitOfMeasurement": item.unitOfMeasurement,
+          "currentStock": item.currentStock,
+          "detailRequirement": item.detailRequirement ?? "",
+          "isActive": item.isActive,
+          "userId": userId,
+        }
+      ],
+    });
+
+    print("Add request: $addBody");
+
+    final addResponse = await http.post(
+      url,
+      headers: {
+        "Content-Type": "application/json",
+        "ApplicationAccessKey": accessKey,
+      },
+      body: addBody,
+    );
+
+    print("Add response: ${addResponse.statusCode} - ${addResponse.body}");
+
+    if (addResponse.statusCode != 200) {
+      throw Exception("Failed to re-add item: ${addResponse.body}");
+    }
+  } ///new
 
 
   static Future<List<Invoice>> getInvoices() async {
@@ -1942,63 +2221,7 @@ try{
     }
   }
 
-  /// Edit item with all enhanced fields
-  // Replace your current RemoteService.editItem method with this
-  static Future<void> editItem(Item item) async {
-    final url = Uri.parse(
-        "https://api.appsheet.com/api/v2/apps/$appId/tables/$itemsTableName/Action");
 
-    final body = jsonEncode({
-      "Action": "Edit",
-      "Properties": {"Locale": "en-US"},
-      // "Rows": [
-      //   {
-      //     "itemId": item.itemId.toString(),
-      //     "itemName": item.itemName,
-      //     "price": item.price,
-      //     "unitOfMeasurement": item.unitOfMeasurement,
-      //     "currentStock": item.currentStock,
-      //     "detailRequirement": item.detailRequirement,
-      //     "isActive": item.isActive ? "TRUE" : "FALSE", // Your table uses TRUE/FALSE
-      //   }
-      // ]
-    });
-
-    print("Edit Request Body: $body");
-
-    final response = await http.post(
-      url,
-      headers: {
-        "Content-Type": "application/json",
-        "ApplicationAccessKey": accessKey,
-      },
-      body: body,
-    );
-
-    print("Edit Response: ${response.statusCode} - '${response.body}'");
-
-    // FIX: Accept empty response body as success for AppSheet
-    if (response.statusCode == 200) {
-      // AppSheet often returns empty body for successful edits
-      if (response.body.trim().isEmpty) {
-        print("✅ Edit successful (empty response body is normal for AppSheet edits)");
-        return;
-      }
-
-      // If there is a response body, validate it
-      try {
-        final responseData = jsonDecode(response.body);
-        print("✅ Edit successful with response data: $responseData");
-        return;
-      } catch (e) {
-        // If we can't parse the response but status is 200, still consider it success
-        print("✅ Edit successful (couldn't parse response but status is 200)");
-        return;
-      }
-    } else {
-      throw Exception("Failed to edit item: HTTP ${response.statusCode} - ${response.body}");
-    }
-  }
 
 
   /// Update only stock for an item

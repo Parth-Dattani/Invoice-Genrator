@@ -9,6 +9,7 @@ import 'package:share_plus/share_plus.dart';
 import '../model/model.dart';
 import '../services/service.dart';
 import '../utils/utils.dart';
+import '../widgets/custom_snackbar.dart';
 import 'controller.dart';
 
 import 'package:flutter/material.dart';
@@ -73,6 +74,18 @@ class InvoiceListController extends BaseController {
       isLoading.value = true;
       print("=== LOADING INVOICES ===");
 
+      final currentUserId = _auth.currentUser?.uid;
+      if (currentUserId == null) {
+        showCustomSnackbar(
+          title: "Error",
+          message: "User not logged in",
+          baseColor: Colors.red.shade700,
+          icon: Icons.error_outline,
+        );
+        return;
+      }
+
+
       List<Invoice> invoices = await RemoteService.getInvoices();
 
       // If no invoices found, try alternative method
@@ -81,12 +94,27 @@ class InvoiceListController extends BaseController {
         invoices = await RemoteService.getInvoices();
       }
 
-      invoiceList.assignAll(invoices);
-      filteredInvoiceList.assignAll(invoices);
+      // Filter invoices by current user ID
+      List<Invoice> userInvoices = invoices.where((invoice) {
+        // Check if invoice has userId field and it matches current user
+        return invoice.userId == currentUserId;
+      }).toList();
+      print("=============usrInvoice----${userInvoices}");
+
+      // If no invoices found, try alternative methods
+      if (userInvoices.isEmpty) {
+        print("Standard method failed, trying alternative...");
+        invoices = await RemoteService.getInvoices();
+        // Filter again
+        userInvoices = invoices.where((invoice) => invoice.userId == currentUserId).toList();
+      }
+
+      invoiceList.assignAll(userInvoices);
+      filteredInvoiceList.assignAll(userInvoices);
 
       print("✅ Loaded ${invoices.length} invoices");
 
-      if (invoices.isEmpty) {
+      if (userInvoices.isEmpty) {
         Get.snackbar(
           'No Invoices',
           'No invoices found in the system',

@@ -7,9 +7,11 @@ import 'package:demo_prac_getx/screen/setting/setting_screen.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:intl/intl.dart';
 
 import '../constant/constant.dart';
 import '../model/model.dart';
+import '../screen/dashboard/widgets/revenue_chart_card.dart';
 import '../screen/screen.dart';
 import '../screen/setting/widgets/widgets.dart';
 import '../services/service.dart';
@@ -148,6 +150,7 @@ import 'controller.dart';
 
 class DashboardController extends BaseController {
   // Observable variables
+  var monthlyRevenueData = <RevenueData>[].obs;
   var totalInvoices = 0.obs;
   var paidInvoices = 0.obs;
   var unpaidInvoices = 0.obs;
@@ -184,6 +187,37 @@ class DashboardController extends BaseController {
     super.onInit();
     _loadCompanyData();
     loadDashboardData();
+  }
+
+  Future<void> checkSubscriptionStatus() async {
+    // Get user creation date from Firestore
+    final userDoc = await FirebaseFirestore.instance
+        .collection('users')
+        .doc(FirebaseAuth.instance.currentUser?.uid)
+        .get();
+
+    if (userDoc.exists) {
+      final createdAt = userDoc.data()?['createdAt'] as Timestamp?;
+      if (createdAt != null) {
+        final accountCreationDate = createdAt.toDate();
+        final trialEndDate = accountCreationDate.add(Duration(days: 30));
+        final now = DateTime.now();
+
+        // Show dialog if trial has ended
+        if (now.isAfter(trialEndDate)) {
+          // Use a small delay to ensure widget is fully built
+          Future.delayed(Duration(milliseconds: 500), () {
+            showDialog(
+              context: Get.context!,
+              barrierDismissible: false, // This prevents tapping outside to dismiss
+              builder: (BuildContext context) {
+                return SubscriptionDialog();
+              },
+            );
+          });
+        }
+      }
+    }
   }
 
   // Load all companies and set current company
@@ -281,6 +315,17 @@ class DashboardController extends BaseController {
 
       print("=== ATTEMPTING TO FETCH INVOICES ===");
 
+      final currentUserId = _auth.currentUser?.uid;
+      if (currentUserId == null) {
+        showCustomSnackbar(
+          title: "Error",
+          message: "User not logged in",
+          baseColor: Colors.red.shade700,
+          icon: Icons.error_outline,
+        );
+        return;
+      }
+
       // Try to get invoices
       List<Invoice> invoices = await RemoteService.getInvoices();
 
@@ -290,16 +335,38 @@ class DashboardController extends BaseController {
         invoices = await RemoteService.getInvoices();
       }
 
+      // Filter invoices by current user ID
+      List<Invoice> userInvoices = invoices.where((invoice) {
+        // Check if invoice has userId field and it matches current user
+        return invoice.userId == currentUserId;
+      }).toList();
+      print("=============usrInvoice----${userInvoices}");
+
+      // If no invoices found, try alternative methods
+      if (userInvoices.isEmpty) {
+        print("Standard method failed, trying alternative...");
+        invoices = await RemoteService.getInvoices();
+        // Filter again
+        userInvoices = invoices.where((invoice) => invoice.userId == currentUserId).toList();
+      }
+
+
       print("Final result: ${invoices.length} invoices found");
 
       // Debug: Print each found invoice
-      for (var invoice in invoices) {
+      double totalRevenueCalculated = 0.0;
+      for (var invoice in userInvoices) {
         print("Found invoice: ${invoice.invoiceId} (ID: ${invoice.itemName}) - Amount: ${invoice.totalAmount}");
+        totalRevenueCalculated += invoice.totalAmount ?? 0.0;
       }
 
-      invoiceList.assignAll(invoices);
 
-      if (invoices.isEmpty) {
+
+      invoiceList.assignAll(userInvoices);
+      // Update total revenue
+      totalRevenue.value = totalRevenueCalculated;
+
+      if (userInvoices.isEmpty) {
         showCustomSnackbar(
           title: "No Invoices",
           message: "No invoices found",
@@ -307,12 +374,8 @@ class DashboardController extends BaseController {
           icon: Icons.info_outline,
         );
       } else {
-        showCustomSnackbar(
-          title: "Success",
-          message: "Found ${invoices.length} invoices",
-          baseColor: Colors.green.shade700,
-          icon: Icons.check_circle_outline,
-        );
+        print("Success---Found ${userInvoices.length} invoices");
+
       }
 
     } catch (e) {
@@ -327,6 +390,17 @@ class DashboardController extends BaseController {
       isLoading.value = false;
     }
   }
+
+  double calculateTotalRevenue() {
+    double total = 0.0;
+    for (var invoice in invoiceList) {
+      total += invoice.totalAmount ?? 0.0;
+    }
+    return total;
+  }
+
+// You can also add a reactive getter
+  double get totalRevenueFromList => calculateTotalRevenue();
 
   // Switch to a different company
   Future<void> switchCompany(Map<String, dynamic> newCompany) async {
@@ -547,6 +621,10 @@ class DashboardController extends BaseController {
         loadInvoices()
       ]);
 
+      // Generate monthly revenue data after invoices are loaded
+      await getMonthlyRevenueData();
+
+
     } catch (error) {
       Get.snackbar(
         'Error',
@@ -596,6 +674,9 @@ class DashboardController extends BaseController {
         final status = data['status'] ?? 'draft';
         final amount = (data['totalAmount'] ?? 0.0).toDouble();
 
+        // Add to total revenue regardless of status
+        totalRev += amount;
+
         switch (status.toLowerCase()) {
           case 'paid':
             paidCount++;
@@ -625,6 +706,7 @@ class DashboardController extends BaseController {
             qty: data['qty'] ?? 1,
             mobile: data['customerMobile'] ?? '',
             itemName: data['itemName'] ?? '',
+            totalAmount: amount,
           ));
         }
       }
@@ -665,7 +747,7 @@ class DashboardController extends BaseController {
     overdueInvoices.value = 12;
     draftInvoices.value = 10;
     totalRevenue.value = 125430.50;
-    pendingAmount.value = 34560.75;
+    pendingAmount.value = 0.0;
     overdueAmount.value = 8945.25;
 
     recentInvoices.value = [
@@ -979,11 +1061,11 @@ class DashboardController extends BaseController {
     );
   }
 
-  void navigateToReports() {
+  void navigateToItems() {
     Get.toNamed(ItemScreen.pageId);
   }
 
-  void navigateToSettings() {
+  void navigateToNewChallan() {
     Get.lazyPut<NewChallanController>(() => NewChallanController());
 
     Get.to(() => NewChallanScreen(),);
@@ -1044,7 +1126,93 @@ class DashboardController extends BaseController {
     }
   }
 
+  final List<RevenueData> revenueData = [
+    RevenueData(month: 'Jan',year: 2025, revenue: 5000),
+    RevenueData(month: 'Feb',year: 2025, revenue: 7500),
+    RevenueData(month: 'Mar', year: 2025,revenue: 10000),
+    RevenueData(month: 'Apr',year: 2025, revenue: 8200),
 
+  ];
+
+
+  // Add this method to generate revenue data dynamically
+  /// Method to generate month-based revenue data
+// Enhanced monthly revenue calculation with filters
+  Future<List<RevenueData>> getMonthlyRevenueData({
+    int monthsBack = 12,
+    String? statusFilter, // 'paid', 'pending', 'overdue', or null for all
+    bool includeCurrentMonth = true,
+  }) async {
+    try {
+      if (invoiceList.isEmpty) return [];
+
+      final now = DateTime.now();
+      final List<RevenueData> result = [];
+
+      int startMonth = includeCurrentMonth ? monthsBack - 1 : monthsBack;
+
+      for (int i = startMonth; i >= 0; i--) {
+        final monthDate = DateTime(now.year, now.month - i, 1);
+        final monthName = DateFormat('MMM yyyy').format(monthDate);
+        final year = monthDate.year;
+
+        double monthlyTotal = 0;
+        for (var invoice in invoiceList) {
+          // Check date filter
+          final isSameMonth = invoice.issueDate != null &&
+              invoice.issueDate!.year == monthDate.year &&
+              invoice.issueDate!.month == monthDate.month;
+
+          // Check status filter
+          final matchesStatus = statusFilter == null ||
+              (invoice.status?.toLowerCase() == statusFilter.toLowerCase());
+
+          if (isSameMonth && matchesStatus) {
+            monthlyTotal += invoice.totalAmount ?? 0;
+          }
+        }
+
+        result.add(RevenueData(
+          month: monthName,
+          revenue: monthlyTotal,
+          year: year,
+        ));
+      }
+
+      return result;
+
+    } catch (e) {
+      print("Error in getMonthlyRevenueData: $e");
+      return [];
+    }
+  }
+
+  // Get total revenue for current month
+  double get currentMonthRevenue {
+    if (monthlyRevenueData.isEmpty) return 0;
+    return monthlyRevenueData.last.revenue;
+  }
+
+// Get revenue growth compared to previous month
+  double get monthlyGrowth {
+    if (monthlyRevenueData.length < 2) return 0;
+
+    final current = monthlyRevenueData.last.revenue;
+    final previous = monthlyRevenueData[monthlyRevenueData.length - 2].revenue;
+
+    if (previous == 0) return current > 0 ? 100 : 0;
+
+    return ((current - previous) / previous * 100);
+  }
+
+// Get best performing month
+  RevenueData? get bestPerformingMonth {
+    if (monthlyRevenueData.isEmpty) return null;
+
+    return monthlyRevenueData.reduce((a, b) =>
+    a.revenue > b.revenue ? a : b
+    );
+  }
 }
 
 class ChartData {

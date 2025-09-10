@@ -72,7 +72,7 @@ class RecentInvoicesCard extends GetView<DashboardController> {
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     Text(
-                      '\$${invoice.price.toStringAsFixed(2)}',
+                      '₹${invoice.totalAmount}',
                       style: TextStyle(
                         fontWeight: FontWeight.bold,
                         fontSize: 14,

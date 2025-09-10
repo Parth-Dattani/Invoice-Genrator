@@ -387,7 +387,7 @@ class NewChallanController extends BaseController {
       itemId: '',
       totalPrice: 0.0,
       itemName: '',
-
+customerId: ''
     ));
     calculateTotals();
   }
@@ -396,6 +396,7 @@ class NewChallanController extends BaseController {
     if (index < challanItems.length) {
       final item = challanItems[index];
       challanItems[index] = ChallanItem(
+        customerId: item.customerId,
         description: description ?? item.description,
         quantity: quantity ?? item.quantity,
         price: price ?? item.price,
@@ -410,6 +411,7 @@ class NewChallanController extends BaseController {
   void selectRemoteItemForIndex(int index, Item item) {
     if (index < challanItems.length) {
       challanItems[index] = ChallanItem(
+        customerId: selectedCustomerId.value.toString(),
         description: item.itemName,
         quantity: challanItems[index].quantity,
         price: item.price.toDouble(),
@@ -502,6 +504,8 @@ class NewChallanController extends BaseController {
         Map<String, dynamic> challanItemData = {
           '_RowNumber': '',
           'challanId': challanNumberController.text, // Use challan ID as reference
+          'customerId': selectedCustomerId.value.toString(),
+
           'itemId': item.itemId,
           'itemName': item.description,
           'description': item.description,

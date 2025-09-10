@@ -1786,6 +1786,9 @@ class NewInvoiceScreen extends GetView<NewInvoiceController> {
     ));
   }
 
+
+
+  /// In your _buildChallanToInvoiceSection method
   Widget _buildChallanToInvoiceSection() {
     return Obx(() {
       return Card(
@@ -1833,6 +1836,50 @@ class NewInvoiceScreen extends GetView<NewInvoiceController> {
 
               // Show challan section only when checkbox is checked
               if (controller.createFromChallan.value) ...[
+                SizedBox(height: 16),
+
+                // Date Range Picker
+                Text(
+                  'Select Date Range:',
+                  style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    color: Colors.purple.shade700,
+                  ),
+                ),
+                SizedBox(height: 8),
+                Row(
+                  children: [
+                    Expanded(
+                      child: TextFormField(
+                        controller: controller.fromDateController,
+                        decoration: InputDecoration(
+                          labelText: 'From Date',
+                          prefixIcon: Icon(Icons.calendar_today),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                        ),
+                        readOnly: true,
+                        onTap: () => controller.selectFromDate(Get.context!),
+                      ),
+                    ),
+                    SizedBox(width: 16),
+                    Expanded(
+                      child: TextFormField(
+                        controller: controller.toDateController,
+                        decoration: InputDecoration(
+                          labelText: 'To Date',
+                          prefixIcon: Icon(Icons.calendar_today),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                        ),
+                        readOnly: true,
+                        onTap: () => controller.selectToDate(Get.context!),
+                      ),
+                    ),
+                  ],
+                ),
                 SizedBox(height: 16),
 
                 if (controller.allChallans.isEmpty)
@@ -1917,7 +1964,7 @@ class NewInvoiceScreen extends GetView<NewInvoiceController> {
                                   'Challan #${challan.challanId}',
                                   style: TextStyle(fontSize: 14),
                                 ),
-                                trailing: Text(
+                                subtitle: Text(
                                   DateFormat('MMM dd, yyyy').format(
                                       challan.challanDate ?? DateTime.now()
                                   ),

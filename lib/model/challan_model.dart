@@ -171,16 +171,22 @@ class ChallanItem {
   final int quantity;
   final double price;
   final String itemId;
+  final String customerId;
   final String itemName;
   final double totalPrice;
+  String? challanId;
+  DateTime? challanDate;
 
   ChallanItem({
     required this.description,
     required this.quantity,
     required this.price,
     required this.itemId,
+    required this.customerId,
     required this.itemName,
     required this.totalPrice,
+    this.challanId,
+    this.challanDate
   });
 
   double get amount => quantity * price;
@@ -191,8 +197,10 @@ class ChallanItem {
       'quantity': quantity,
       'price': price,
       'itemId': itemId,
+      'customerId': customerId,
       'itemName': itemName,
       'totalPrice': totalPrice,
+      'challanDate': challanDate
     };
   }
 
@@ -202,8 +210,13 @@ class ChallanItem {
       quantity: int.tryParse(map['quantity']?.toString() ?? '0') ?? 0,
       price: double.tryParse(map['price']?.toString() ?? '0.0') ?? 0.0,
       itemId: map['itemId']?.toString() ?? '',
+      customerId: map['customerId']?.toString() ?? '',
       itemName: map['itemName']?.toString() ?? '',
       totalPrice: double.tryParse(map['totalPrice']?.toString() ?? '0.0') ?? 0.0,
+      challanId: map['challanId']?.toString() ?? map['ChallanId']?.toString() ?? '',
+      challanDate: map['challanDate'] != null
+          ? DateTime.tryParse(map['challanDate'].toString())
+          : null,
     );
   }
 
@@ -211,17 +224,21 @@ class ChallanItem {
     String? description,
     int? quantity,
     double? price,
+    String? customerId,
     String? itemId,
     String? itemName,
     double? totalPrice,
+    DateTime? challanDate
   }) {
     return ChallanItem(
       description: description ?? this.description,
       quantity: quantity ?? this.quantity,
       price: price ?? this.price,
+      customerId: customerId ?? this.itemId,
       itemId: itemId ?? this.itemId,
       itemName: itemName ?? this.itemName,
       totalPrice: totalPrice ?? this.totalPrice,
+      challanDate: challanDate ?? this.challanDate,
     );
   }
 }

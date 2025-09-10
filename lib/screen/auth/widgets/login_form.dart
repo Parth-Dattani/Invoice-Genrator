@@ -62,8 +62,8 @@ class LoginForm extends GetView<AuthController> {
                 ),
                 const SizedBox(height: 20),
                 TextButton(
-                  onPressed: controller.isLoading.value ? null : controller.authenticateWithMobile,
-                  child: const Text("Authenticate via Mobile", style: TextStyle(color: Colors.pinkAccent)),
+                  onPressed: (){},//controller.isLoading.value ? null : controller.authenticateWithMobile,
+                  child: const Text("Forget Password?", style: TextStyle(color: Colors.pinkAccent)),
                 ),
               ],
             ),

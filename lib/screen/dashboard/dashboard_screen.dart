@@ -1,5 +1,6 @@
 import 'package:demo_prac_getx/screen/dashboard/widgets/widgets.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:get/get.dart';
 import '../../controller/controller.dart';
 import '../screen.dart';
@@ -11,6 +12,9 @@ class DashboardScreen extends GetView<DashboardController> {
 
   @override
   Widget build(BuildContext context) {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      controller.checkSubscriptionStatus();
+    });
     return Scaffold(
       key: controller.scaffoldKey,
       appBar: AppBar(
@@ -25,7 +29,7 @@ class DashboardScreen extends GetView<DashboardController> {
         actions: [
           IconButton(
             icon: Icon(Icons.settings),
-            onPressed: controller.navigateToSettings,
+            onPressed: controller.navigateToNewChallan,
           ),
           IconButton(
             icon: Icon(Icons.refresh),
@@ -107,11 +111,11 @@ class DashboardScreen extends GetView<DashboardController> {
           ),
         ),
       )),
-      floatingActionButton: FloatingActionButton(
-        onPressed: controller.navigateToSettings,
-        backgroundColor: Colors.blue.shade700,
-        child: Icon(Icons.add, color: Colors.white),
-      ),
+      // floatingActionButton: FloatingActionButton(
+      //   onPressed: controller.navigateToNewChallan,
+      //   backgroundColor: Colors.blue.shade700,
+      //   child: Icon(Icons.add, color: Colors.white),
+      // ),
       drawer: buildDrawer(),
     );
   }
@@ -185,7 +189,7 @@ class DashboardScreen extends GetView<DashboardController> {
                     title: 'Reports',
                     subtitle: 'View analytics',
                     color: Colors.purple,
-                    onTap: () => controller.navigateToReports(),
+                    onTap: () => controller.navigateToItems(),
                   ),
                 ),
               ],
@@ -371,7 +375,7 @@ class DashboardScreen extends GetView<DashboardController> {
                   title: Text("Reports"),
                   onTap: () {
                     Get.back();
-                    controller.navigateToReports();
+                    controller.navigateToItems();
                   },
                 ),
                 Divider(),
@@ -403,7 +407,7 @@ class DashboardScreen extends GetView<DashboardController> {
                   title: Text("Settings"),
                   onTap: () {
                     Get.back();
-                    controller.navigateToSettings();
+                    controller.navigateToNewChallan();
                   },
                 ),
                 ListTile(
@@ -423,4 +427,194 @@ class DashboardScreen extends GetView<DashboardController> {
   }
 
 
+}
+
+
+class SubscriptionDialog extends StatelessWidget {
+  const SubscriptionDialog({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return Dialog(
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+      elevation: 10,
+      child: Container(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [Colors.blue.shade800, Colors.blue.shade600],
+          ),
+          borderRadius: BorderRadius.circular(20),
+        ),
+        child: Padding(
+          padding: const EdgeInsets.all(25),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // Animated Icon
+              Container(
+                padding: const EdgeInsets.all(15),
+                decoration: BoxDecoration(
+                  color: Colors.white.withOpacity(0.2),
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(
+                  Icons.workspace_premium,
+                  size: 50,
+                  color: Colors.amber.shade300,
+                ),
+              ),
+
+              SizedBox(height: 20),
+
+              // Title with gradient text
+              ShaderMask(
+                blendMode: BlendMode.srcIn,
+                shaderCallback: (bounds) => LinearGradient(
+                  colors: [Colors.amber.shade300, Colors.amber.shade100],
+                ).createShader(bounds),
+                child: Text(
+                  'Premium Access Required',
+                  style: TextStyle(
+                    fontSize: 22,
+                    fontWeight: FontWeight.bold,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+              ),
+
+              SizedBox(height: 15),
+
+              // Message
+              Text(
+                'Your 30-day trial period has ended. To continue enjoying all premium features, please contact your authorized representative.',
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontSize: 16,
+                  color: Colors.white.withOpacity(0.9),
+                  height: 1.4,
+                ),
+              ),
+
+              SizedBox(height: 25),
+
+              // Contact card
+              Container(
+                padding: const EdgeInsets.all(15),
+                decoration: BoxDecoration(
+                  color: Colors.white.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(15),
+                  border: Border.all(color: Colors.white.withOpacity(0.3)),
+                ),
+                child: Column(
+                  children: [
+                    _buildContactInfo(Icons.person, 'Authorized Representative', 'Inteligent Tech'),
+                    SizedBox(height: 12),
+                    _buildContactInfo(Icons.phone, 'Phone No.', '+91 9512359792'),
+                    SizedBox(height: 12),
+                    _buildContactInfo(Icons.email, 'Email', 'dattaniparth2@gmail.com'),
+                  ],
+                ),
+              ),
+
+              SizedBox(height: 25),
+
+              // Action button
+              Container(
+                width: double.infinity,
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(12),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.blue.shade900.withOpacity(0.4),
+                      blurRadius: 10,
+                      offset: Offset(0, 4),
+                    ),
+                  ],
+                ),
+                child: ElevatedButton(
+                  onPressed: () {
+                    // // Copy phone number to clipboard
+                    // Clipboard.setData(ClipboardData(text: '+1 (555) 123-4567'));
+                    //
+                    // // Show confirmation with GetX
+                    // Get.snackbar(
+                    //   'Copied!',
+                    //   'Phone number copied to clipboard',
+                    //   snackPosition: SnackPosition.BOTTOM,
+                    //   backgroundColor: Colors.green.shade600,
+                    //   colorText: Colors.white,
+                    //   borderRadius: 10,
+                    //   margin: EdgeInsets.all(15),
+                    // );
+                  },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.amber.shade500,
+                    foregroundColor: Colors.blue.shade900,
+                    padding: EdgeInsets.symmetric(vertical: 16),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    elevation: 0,
+                  ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(Icons.contact_phone, size: 22),
+                      SizedBox(width: 10),
+                      Text(
+                        'Contact Representative',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildContactInfo(IconData icon, String title, String value) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Icon(
+          icon,
+          color: Colors.amber.shade300,
+          size: 20,
+        ),
+        SizedBox(width: 12),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                title,
+                style: TextStyle(
+                  color: Colors.white.withOpacity(0.7),
+                  fontSize: 12,
+                ),
+              ),
+              SizedBox(height: 2),
+              Text(
+                value,
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 15,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
 }

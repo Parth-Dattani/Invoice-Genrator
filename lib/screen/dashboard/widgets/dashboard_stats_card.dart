@@ -15,7 +15,7 @@ class DashboardStatsCard extends GetView<DashboardController> {
             Expanded(
               child: _buildStatCard(
                 title: 'Total Revenue',
-                value: '\$${controller.totalRevenue.value.toStringAsFixed(2)}',
+                value: '₹${controller.totalRevenue.value.toStringAsFixed(2)}',
                 icon: Icons.account_balance_wallet,
                 color: Colors.green,
               ),
@@ -24,7 +24,7 @@ class DashboardStatsCard extends GetView<DashboardController> {
             Expanded(
               child: _buildStatCard(
                 title: 'Pending Amount',
-                value: '\$${controller.pendingAmount.value.toStringAsFixed(2)}',
+                value: '₹${controller.pendingAmount.value.toStringAsFixed(2)}',
                 icon: Icons.pending,
                 color: Colors.orange,
               ),
